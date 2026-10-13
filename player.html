@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Курс · Учебный портал 585 GOLD</title>
+<link rel="stylesheet" href="style.css">
+<style>
+html,body{height:100%}
+body{display:flex;flex-direction:column;background:var(--ink)}
+.bar .back{background:var(--yel);color:var(--ink);border:2px solid var(--ink);padding:9px 12px;font:700 11px/1 var(--disp);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.bar .back:hover{background:#fff}
+.chip{font:700 11px/1 var(--disp);letter-spacing:.12em;text-transform:uppercase;border:2px solid #fff;padding:6px 9px;white-space:nowrap}
+.chip.ok{background:var(--yel);color:var(--ink);border-color:var(--yel)}
+.chip.bad{background:#fff;color:var(--red);border-color:#fff}
+#stage{flex:1;position:relative;background:#fff}
+#frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.done{position:absolute;inset:0;z-index:5;background:rgba(20,16,14,.66);display:flex;align-items:center;justify-content:center;padding:16px}
+.done[hidden]{display:none}
+.done .box{position:relative;max-width:520px;width:100%;background:var(--paper);border:3px solid var(--ink);box-shadow:12px 12px 0 var(--ink);padding:34px 30px 30px;animation:boot .55s cubic-bezier(.2,.9,.25,1.2) both}
+.done h3{font:800 30px/1.08 var(--disp);margin:4px 0 10px}
+.done p{color:var(--ink2);margin-bottom:24px}
+.done .row{display:flex;flex-wrap:wrap;gap:18px}
+.done .btn{padding:16px 22px;font-size:13px}
+.done .tab{top:-33px}
+.done.fail .tab{background:var(--yel)}
+.done.pass .tab{background:var(--red);color:#fff}
+@media (max-width:560px){.bar .chip{display:none}}
+</style>
+<script src="config.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+<div class="bar"><div class="wrap" style="max-width:none">
+ <div class="l"><button class="back" id="back">← К траектории</button><span class="ttl" id="title"></span></div>
+ <div class="r"><span class="chip" id="chip">В процессе</span><span class="logo"><i></i>585 GOLD</span></div>
+</div></div>
+<div id="stage">
+ <iframe id="frame" title="Курс" allow="autoplay; fullscreen" allowfullscreen></iframe>
+ <div class="done" id="done" hidden><div class="box">
+  <span class="tab" id="dTab">Результат</span>
+  <h3 id="dTitle"></h3><p id="dText"></p>
+  <div class="row"><a class="btn" href="index.html" id="dGo">► К траектории</a><button class="btn ghost" id="dStay">Остаться в курсе</button></div>
+ </div></div>
+</div>
+
+<script>
+(function () {
+  var P = window.PORTAL, X = window.Portal;
+  var cid = new URLSearchParams(location.search).get("c"), course = P.courses[cid], user = X.getUser();
+  if (!course || !user) { location.replace("index.html"); return; }
+  var state = X.courseState(X.getProgress(user.uid));
+  if (!state[cid].open) { location.replace("index.html"); return; }
+
+  document.title = course.title + " · Учебный портал 585 GOLD";
+  document.getElementById("title").textContent = course.title;
+
+  /* ---------- SCORM 1.2 runtime ---------- */
+  var KEY = "scorm:" + user.uid + ":" + cid;
+  var saved = X.lsGet(KEY, null);                       // { suspend, location, totalTime, attempt, startedAt }
+  var finalBefore = saved && saved.final;                // прошлая попытка завершена → новая попытка
+  if (!saved || finalBefore) saved = { attempt: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), startedAt: new Date().toISOString(), totalTime: 0, suspend: "", location: "" };
+
+  var cmi = {
+    "cmi.core.student_id": user.uid, "cmi.core.student_name": user.fio,
+    "cmi.core.lesson_location": saved.location || "", "cmi.core.credit": "credit",
+    "cmi.core.lesson_status": saved.status || "not attempted", "cmi.core.entry": saved.suspend || saved.location ? "resume" : "ab-initio",
+    "cmi.core.score.raw": saved.score != null ? String(saved.score) : "", "cmi.core.score.min": "", "cmi.core.score.max": "",
+    "cmi.core.total_time": fmtTime(saved.totalTime || 0), "cmi.core.lesson_mode": "normal", "cmi.core.exit": "", "cmi.core.session_time": "0000:00:00",
+    "cmi.suspend_data": saved.suspend || "", "cmi.launch_data": "", "cmi.comments": "", "cmi.comments_from_lms": "",
+    "cmi.student_data.mastery_score": course.mastery != null ? String(course.mastery) : "",
+    "cmi.student_data.max_time_allowed": "", "cmi.student_data.time_limit_action": "continue,no message",
+    "cmi.student_preference.audio": "0", "cmi.student_preference.language": "ru", "cmi.student_preference.speed": "0", "cmi.student_preference.text": "0"
+  };
+  var children = {
+    "cmi.core._children": "student_id,student_name,lesson_location,credit,lesson_status,entry,score,total_time,lesson_mode,exit,session_time",
+    "cmi.core.score._children": "raw,min,max", "cmi.objectives._children": "id,score,status",
+    "cmi.student_data._children": "mastery_score,max_time_allowed,time_limit_action",
+    "cmi.student_preference._children": "audio,language,speed,text",
+    "cmi.interactions._children": "id,objectives,time,type,correct_responses,weighting,student_response,result,latency",
+    "cmi._version": "3.4"
+  };
+  var readOnly = /^cmi\.(core\.(student_id|student_name|credit|entry|total_time|lesson_mode)|launch_data|comments_from_lms|student_data\.|_version|.*\._children|.*\._count)/;
+  var writeOnly = /^cmi\.(core\.(exit|session_time)|interactions\.\d+\.(id|objectives|time|type|correct_responses|weighting|student_response|result|latency))/;
+  var inited = false, finished = false, lastErr = "0", sessionStart = Date.now(), dirty = false, lastSentSig = "";
+
+  function fmtTime(sec) { sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h < 10 ? "000" : h < 100 ? "00" : h < 1000 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }
+  function countOf(prefix) { var n = -1, re = new RegExp("^" + prefix.replace(/\./g, "\\.") + "\\.(\\d+)\\."); Object.keys(cmi).forEach(function (k) { var m = k.match(re); if (m) n = Math.max(n, +m[1]); }); return n + 1; }
+
+  function getValue(k) {
+    k = String(k); lastErr = "0";
+    if (!inited || finished) { lastErr = "301"; return ""; }
+    if (children[k] != null) return children[k];
+    if (/^cmi\.(interactions|objectives)\._count$/.test(k)) return String(countOf(k.replace("._count", "")));
+    var m = k.match(/^cmi\.interactions\.(\d+)\.(objectives|correct_responses)\._count$/);
+    if (m) return String(countOf("cmi.interactions." + m[1] + "." + m[2]));
+    if (writeOnly.test(k)) { lastErr = "404"; return ""; }
+    if (k in cmi) return cmi[k];
+    if (/^cmi\.(objectives|interactions)\./.test(k)) return "";
+    lastErr = "401"; return "";
+  }
+  function setValue(k, v) {
+    k = String(k); v = v == null ? "" : String(v); lastErr = "0";
+    if (!inited || finished) { lastErr = "301"; return "false"; }
+    if (readOnly.test(k)) { lastErr = "403"; return "false"; }
+    cmi[k] = v;
+    if (k === "cmi.core.lesson_status" || k.indexOf("cmi.core.score") === 0) { dirty = true; updateChip(); }
+    if (k === "cmi.suspend_data" || k === "cmi.core.lesson_location") persistLocal();
+    return "true";
+  }
+
+  /* оценка результата по правилам портала */
+  function verdict() {
+    var s = cmi["cmi.core.lesson_status"], raw = parseFloat(cmi["cmi.core.score.raw"]), max = parseFloat(cmi["cmi.core.score.max"]), min = parseFloat(cmi["cmi.core.score.min"]);
+    var pct = isNaN(raw) ? null : (!isNaN(max) && max > 0 && max !== 100 ? 100 * (raw - (isNaN(min) ? 0 : min)) / (max - (isNaN(min) ? 0 : min)) : raw);
+    if (pct != null) pct = Math.round(pct * 10) / 10;
+    var out;
+    if (s === "passed") out = "passed";
+    else if (s === "failed") out = "failed";
+    else if (s === "completed") {
+      if (course.mastery != null && pct != null) out = pct >= course.mastery ? "passed" : "failed";
+      else out = "passed";
+    } else out = "started";
+    return { status: out, score: pct, raw: s };
+  }
+
+  function interactionsText() {
+    var n = countOf("cmi.interactions"), lines = [];
+    for (var i = 0; i < n; i++) {
+      var p = "cmi.interactions." + i + ".", res = cmi[p + "result"] || "";
+      var r = res === "correct" ? "верно" : res === "wrong" ? "неверно" : res === "neutral" ? "без оценки" : res;
+      lines.push((i + 1) + ". " + (cmi[p + "id"] || "вопрос") + " — " + r + (cmi[p + "student_response"] ? " (ответ: " + cmi[p + "student_response"] + ")" : ""));
+    }
+    return lines.join("\n");
+  }
+
+  function persistLocal(extra) {
+    saved.suspend = cmi["cmi.suspend_data"]; saved.location = cmi["cmi.core.lesson_location"];
+    saved.status = cmi["cmi.core.lesson_status"]; var r = parseFloat(cmi["cmi.core.score.raw"]); saved.score = isNaN(r) ? null : r;
+    if (extra) for (var k in extra) saved[k] = extra[k];
+    X.lsSet(KEY, saved);
+  }
+
+  function send(beacon) {
+    var v = verdict(), secs = (Date.now() - sessionStart) / 1000;
+    var sig = v.status + "|" + v.score + "|" + countOf("cmi.interactions");
+    if (sig === lastSentSig && !beacon) return;
+    lastSentSig = sig;
+    X.saveEntry(user.uid, cid, { status: v.status, score: v.score, at: new Date().toISOString() });
+    X.apiPost({ type: "attempt", user: user, course: { id: cid, title: course.title }, attempt: saved.attempt, startedAt: saved.startedAt,
+      updatedAt: new Date().toISOString(), status: v.status, scormStatus: v.raw, score: v.score,
+      timeSec: Math.round((saved.totalTime || 0) + secs), answers: interactionsText() }, beacon);
+  }
+
+  function commit() { if (!inited || finished) { lastErr = "301"; return "false"; } persistLocal(); if (dirty) { dirty = false; send(false); } return "true"; }
+
+  function finish(fromPortal) {
+    if (!inited || finished) return "true";
+    finished = true;
+    var secs = (Date.now() - sessionStart) / 1000, v = verdict();
+    var isFinal = v.status === "passed" || v.status === "failed";
+    persistLocal({ totalTime: (saved.totalTime || 0) + secs, final: isFinal });
+    lastSentSig = ""; send(!!fromPortal);
+    if (!fromPortal) showResult(v);
+    return "true";
+  }
+
+  window.API = {
+    LMSInitialize: function () { if (inited) { lastErr = "101"; return "false"; } inited = true; lastErr = "0"; sessionStart = Date.now();
+      if (cmi["cmi.core.lesson_status"] === "not attempted") { X.saveEntry(user.uid, cid, { status: "started", score: null, at: new Date().toISOString() }); }
+      X.apiPost({ type: "attempt", user: user, course: { id: cid, title: course.title }, attempt: saved.attempt, startedAt: saved.startedAt, updatedAt: new Date().toISOString(),
+        status: verdict().status, scormStatus: cmi["cmi.core.lesson_status"], score: verdict().score, timeSec: Math.round(saved.totalTime || 0), answers: "" });
+      return "true"; },
+    LMSFinish: function () { return finish(false); },
+    LMSGetValue: getValue, LMSSetValue: setValue, LMSCommit: commit,
+    LMSGetLastError: function () { return lastErr; },
+    LMSGetErrorString: function (c) { return { "0": "No error", "101": "General exception", "201": "Invalid argument", "301": "Not initialized", "401": "Not implemented", "403": "Read only", "404": "Write only", "405": "Incorrect data type" }[c] || ""; },
+    LMSGetDiagnostic: function (c) { return ""; }
+  };
+
+  /* ---------- интерфейс ---------- */
+  var chip = document.getElementById("chip");
+  function updateChip() {
+    var v = verdict();
+    chip.className = "chip" + (v.status === "passed" ? " ok" : v.status === "failed" ? " bad" : "");
+    chip.textContent = v.status === "passed" ? "Сдан" + (v.score != null ? " · " + Math.round(v.score) + "%" : "") : v.status === "failed" ? "Не сдан" + (v.score != null ? " · " + Math.round(v.score) + "%" : "") : "В процессе";
+  }
+  function showResult(v) {
+    var d = document.getElementById("done"), t = document.getElementById("dTitle"), p = document.getElementById("dText"), sc = v.score != null ? " Результат: " + Math.round(v.score) + "%." : "";
+    d.className = "done " + (v.status === "passed" ? "pass" : v.status === "failed" ? "fail" : "");
+    if (v.status === "passed") { document.getElementById("dTab").textContent = "Курс сдан"; t.textContent = "Отлично, курс засчитан!"; p.textContent = "«" + course.title + "» пройден." + sc + " Следующий шаг уже ждёт на траектории."; }
+    else if (v.status === "failed") { document.getElementById("dTab").textContent = "Не сдан"; t.textContent = "Почти получилось"; p.textContent = "Тест не набрал проходной балл." + sc + " Повтори материал и пройди курс ещё раз — попыток сколько угодно."; }
+    else { document.getElementById("dTab").textContent = "Пауза"; t.textContent = "Курс сохранён"; p.textContent = "Ты вышел из курса до конца. Прогресс сохранён — продолжишь с того же места."; }
+    d.hidden = false;
+  }
+  document.getElementById("dStay").addEventListener("click", function () { document.getElementById("done").hidden = true; });
+  document.getElementById("back").addEventListener("click", function () {
+    if (inited && !finished) { try { var f = document.getElementById("frame").contentWindow; } catch (e) {} finish(true); }
+    location.href = "index.html";
+  });
+  window.addEventListener("pagehide", function () { if (inited && !finished) finish(true); });
+  setInterval(function () { if (dirty) commit(); }, 30000);
+
+  updateChip();
+  document.getElementById("frame").src = course.launch;
+})();
+</script>
+</body>
+</html>
