@@ -4,7 +4,7 @@
    sequential: true — курсы внутри этапа открываются строго по очереди.
    passOnComplete: true — курс без теста засчитывается, когда досмотрен до конца. */
 window.PORTAL = {
-  api: "",
+  api: "https://script.google.com/macros/s/AKfycbxFQGbbEY3wWCABM11sQr7D6z84bXH-wYIDl6IL4VLNsDv73BYKKUOpYHeAKwPG2dBQAA/exec",
   stages: [
     { title: "Изделие",          intro: "Начинаем с основы: из чего сделаны украшения. Оба курса открыты сразу, проходи в любом порядке.", sequential: false, courses: ["metals", "stones"] },
     { title: "Техника продаж",   intro: "Пять шагов продажи — от первого «здравствуйте» до чека. Курсы открываются строго по очереди.",       sequential: true,  courses: ["greeting", "needs", "presentation", "objections", "closing"] },
