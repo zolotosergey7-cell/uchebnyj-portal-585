@@ -50,9 +50,9 @@ h1 .nm{color:var(--red)}
 .lead b{color:var(--ink)}
 .hero .btn{margin-top:30px}
 .who{font-size:12px;line-height:1;margin:38px 0 14px}
-.team{display:flex;flex-wrap:wrap;gap:18px}
-.team figure{width:104px}
-.team img{width:104px;height:104px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink)}
+.team{display:flex;flex-wrap:wrap;gap:14px}
+.team figure{width:96px}
+.team img{width:96px;height:96px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink)}
 .team figcaption{font:700 12px/1 var(--disp);margin-top:12px}
 
 .hero-art{position:relative}
@@ -143,7 +143,7 @@ h2{font:800 clamp(30px,4vw,50px)/1.05 var(--disp);letter-spacing:-.015em;margin:
 .sticker .l1{animation:type 1.1s steps(16) 1.5s forwards}
 .sticker .l2{animation:type 1.2s steps(28) 2.8s forwards}
 .team figure{animation:up .5s ease-out both}
-.team figure:nth-child(1){animation-delay:.7s}.team figure:nth-child(2){animation-delay:.8s}.team figure:nth-child(3){animation-delay:.9s}.team figure:nth-child(4){animation-delay:1s}
+.team figure:nth-child(1){animation-delay:.7s}.team figure:nth-child(2){animation-delay:.8s}.team figure:nth-child(3){animation-delay:.9s}.team figure:nth-child(4){animation-delay:1s}.team figure:nth-child(5){animation-delay:1.1s}
 .card{animation:up .7s cubic-bezier(.2,.8,.2,1) both}
 .stamp{animation:stamp .4s cubic-bezier(.5,0,.75,0) .9s both}
 @supports (animation-timeline:view()){
@@ -172,9 +172,10 @@ h2{font:800 clamp(30px,4vw,50px)/1.05 var(--disp);letter-spacing:-.015em;margin:
  .bar .r .u{max-width:16ch}
  .sticker{left:-8px;bottom:-46px}
  .sticker .ln{font-size:15px}
- .team{gap:14px}
- .team figure,.team img{width:72px;height:auto}
- .team img{height:72px;box-shadow:4px 4px 0 var(--ink)}
+ .team{gap:10px}
+ .team figure,.team img{width:58px;height:auto}
+ .team img{height:58px;box-shadow:3px 3px 0 var(--ink)}
+ .team figcaption{font-size:10px}
  .win{box-shadow:8px 8px 0 var(--ink)}
  .reg .box{padding:30px 20px 22px}
 }
