@@ -49,8 +49,10 @@ body{display:flex;flex-direction:column;background:var(--ink)}
   var P = window.PORTAL, X = window.Portal;
   var cid = new URLSearchParams(location.search).get("c"), course = P.courses[cid], user = X.getUser();
   if (!course || !user) { location.replace("index.html"); return; }
-  var state = X.courseState(X.getProgress(user.uid));
-  if (!state[cid].open) { location.replace("index.html"); return; }
+  var trackId = X.trackOfCourse(cid, new URLSearchParams(location.search).get("t") || X.lsGet("track", ""));
+  var backUrl = "index.html#" + trackId;
+  if (!X.isOpenAnywhere(X.getProgress(user.uid), cid)) { location.replace(backUrl); return; }
+  document.getElementById("dGo").href = backUrl;
 
   document.title = course.title + " · Учебный портал 585 GOLD";
   document.getElementById("title").textContent = course.title;
@@ -111,6 +113,7 @@ body{display:flex;flex-direction:column;background:var(--ink)}
 
   /* оценка результата по правилам портала */
   function verdict() {
+    if (used04) return verdict04();
     var s = cmi["cmi.core.lesson_status"], raw = parseFloat(cmi["cmi.core.score.raw"]), max = parseFloat(cmi["cmi.core.score.max"]), min = parseFloat(cmi["cmi.core.score.min"]);
     var pct = isNaN(raw) ? null : (!isNaN(max) && max > 0 && max !== 100 ? 100 * (raw - (isNaN(min) ? 0 : min)) / (max - (isNaN(min) ? 0 : min)) : raw);
     if (pct != null) pct = Math.round(pct * 10) / 10;
@@ -124,7 +127,30 @@ body{display:flex;flex-direction:column;background:var(--ink)}
     return { status: out, score: pct, raw: s };
   }
 
+  function verdict04() {
+    var cs = cmi4["cmi.completion_status"], ss = cmi4["cmi.success_status"];
+    var sc = parseFloat(cmi4["cmi.score.scaled"]), raw = parseFloat(cmi4["cmi.score.raw"]), max = parseFloat(cmi4["cmi.score.max"]), min = parseFloat(cmi4["cmi.score.min"]);
+    var pct = !isNaN(sc) ? sc * 100 : isNaN(raw) ? null : (!isNaN(max) && max > 0 && max !== 100 ? 100 * (raw - (isNaN(min) ? 0 : min)) / (max - (isNaN(min) ? 0 : min)) : raw);
+    if (pct != null) pct = Math.round(pct * 10) / 10;
+    var out;
+    if (ss === "passed") out = "passed";
+    else if (ss === "failed" && cs === "completed") out = "failed";   // iSpring шлёт failed ещё до теста — считаем «в процессе», пока курс не завершён
+    else if (cs === "completed" && ss !== "failed") out = (course.mastery != null && pct != null) ? (pct >= course.mastery ? "passed" : "failed") : "passed";
+    else out = "started";
+    if (out === "started") pct = null;
+    return { status: out, score: pct, raw: cs + "/" + ss };
+  }
+
   function interactionsText() {
+    if (used04) {
+      var n4 = count4("cmi.interactions"), l4 = [];
+      for (var j = 0; j < n4; j++) {
+        var q = "cmi.interactions." + j + ".", rr = cmi4[q + "result"] || "";
+        var r4 = rr === "correct" ? "верно" : rr === "incorrect" ? "неверно" : rr === "neutral" ? "без оценки" : rr;
+        l4.push((j + 1) + ". " + (cmi4[q + "description"] || cmi4[q + "id"] || "вопрос") + " — " + r4 + (cmi4[q + "learner_response"] ? " (ответ: " + cmi4[q + "learner_response"] + ")" : ""));
+      }
+      return l4.join("\n");
+    }
     var n = countOf("cmi.interactions"), lines = [];
     for (var i = 0; i < n; i++) {
       var p = "cmi.interactions." + i + ".", res = cmi[p + "result"] || "";
@@ -135,15 +161,21 @@ body{display:flex;flex-direction:column;background:var(--ink)}
   }
 
   function persistLocal(extra) {
+    if (used04) {
+      saved.suspend = cmi4["cmi.suspend_data"]; saved.location = cmi4["cmi.location"];
+      var r4 = parseFloat(cmi4["cmi.score.raw"]), s4 = parseFloat(cmi4["cmi.score.scaled"]);
+      saved.c4 = { completion: cmi4["cmi.completion_status"], success: cmi4["cmi.success_status"], raw: isNaN(r4) ? null : r4, scaled: isNaN(s4) ? null : s4 };
+    } else {
     saved.suspend = cmi["cmi.suspend_data"]; saved.location = cmi["cmi.core.lesson_location"];
     saved.status = cmi["cmi.core.lesson_status"]; var r = parseFloat(cmi["cmi.core.score.raw"]); saved.score = isNaN(r) ? null : r;
+    }
     if (extra) for (var k in extra) saved[k] = extra[k];
     X.lsSet(KEY, saved);
   }
 
   function send(beacon) {
     var v = verdict(), secs = (Date.now() - sessionStart) / 1000;
-    var sig = v.status + "|" + v.score + "|" + countOf("cmi.interactions");
+    var sig = v.status + "|" + v.score + "|" + (used04 ? count4("cmi.interactions") : countOf("cmi.interactions"));
     if (sig === lastSentSig && !beacon) return;
     lastSentSig = sig;
     X.saveEntry(user.uid, cid, { status: v.status, score: v.score, at: new Date().toISOString() });
@@ -178,6 +210,68 @@ body{display:flex;flex-direction:column;background:var(--ink)}
     LMSGetDiagnostic: function (c) { return ""; }
   };
 
+  /* ---------- SCORM 2004 runtime (те же данные, другой интерфейс) ---------- */
+  var used04 = false, c4 = saved.c4 || {};
+  var cmi4 = {
+    "cmi._version": "1.0", "cmi.learner_id": user.uid, "cmi.learner_name": user.fio,
+    "cmi.location": saved.location || "", "cmi.credit": "credit", "cmi.mode": "normal",
+    "cmi.entry": saved.suspend || saved.location ? "resume" : "ab-initio",
+    "cmi.completion_status": c4.completion || "unknown", "cmi.success_status": c4.success || "unknown",
+    "cmi.score.scaled": c4.scaled != null ? String(c4.scaled) : "", "cmi.score.raw": c4.raw != null ? String(c4.raw) : "", "cmi.score.min": "", "cmi.score.max": "",
+    "cmi.total_time": "PT" + Math.round(saved.totalTime || 0) + "S", "cmi.suspend_data": saved.suspend || "", "cmi.launch_data": "",
+    "cmi.scaled_passing_score": course.mastery != null ? String(course.mastery / 100) : "", "cmi.completion_threshold": "", "cmi.progress_measure": "",
+    "cmi.max_time_allowed": "", "cmi.time_limit_action": "continue,no message", "cmi.exit": "", "cmi.session_time": "PT0S",
+    "cmi.learner_preference.audio_level": "1", "cmi.learner_preference.language": "ru", "cmi.learner_preference.delivery_speed": "1", "cmi.learner_preference.audio_captioning": "0",
+    "adl.nav.request": "_none_"
+  };
+  var children4 = {
+    "cmi.score._children": "scaled,raw,min,max", "cmi.learner_preference._children": "audio_level,language,delivery_speed,audio_captioning",
+    "cmi.objectives._children": "id,score,success_status,completion_status,progress_measure,description",
+    "cmi.interactions._children": "id,type,objectives,timestamp,correct_responses,weighting,learner_response,result,latency,description",
+    "cmi.comments_from_learner._children": "comment,location,timestamp", "cmi.comments_from_lms._children": "comment,location,timestamp"
+  };
+  var ro4 = /^cmi\.(_version|learner_id|learner_name|credit|mode|entry|total_time|launch_data|scaled_passing_score|completion_threshold|max_time_allowed|time_limit_action|.*\._children|.*\._count)$/;
+  var wo4 = /^cmi\.(exit|session_time)$/;
+  var inited4 = false, err4 = "0";
+  function count4(prefix) { var n = -1, re = new RegExp("^" + prefix.replace(/\./g, "\\.") + "\\.(\\d+)\\."); Object.keys(cmi4).forEach(function (k) { var m = k.match(re); if (m) n = Math.max(n, +m[1]); }); return n + 1; }
+  function get4(k) {
+    k = String(k); err4 = "0";
+    if (!inited4) { err4 = "122"; return ""; }
+    if (finished) { err4 = "123"; return ""; }
+    if (children4[k] != null) return children4[k];
+    var m = k.match(/^(cmi\.(?:interactions|objectives|comments_from_learner|comments_from_lms))\._count$/); if (m) return String(count4(m[1]));
+    m = k.match(/^(cmi\.(?:interactions|objectives)\.\d+\.(?:objectives|correct_responses))\._count$/); if (m) return String(count4(m[1]));
+    if (wo4.test(k)) { err4 = "405"; return ""; }
+    if (k in cmi4) return cmi4[k];
+    if (/^cmi\.(objectives|interactions|comments_from_learner|comments_from_lms)\./.test(k)) { err4 = "403"; return ""; }
+    if (/^adl\./.test(k)) return "unknown";
+    err4 = "401"; return "";
+  }
+  function set4(k, v) {
+    k = String(k); v = v == null ? "" : String(v); err4 = "0";
+    if (!inited4) { err4 = "132"; return "false"; }
+    if (finished) { err4 = "133"; return "false"; }
+    if (ro4.test(k)) { err4 = "404"; return "false"; }
+    cmi4[k] = v;
+    if (/^cmi\.(completion_status|success_status|score\.)/.test(k)) { dirty = true; updateChip(); }
+    if (k === "cmi.suspend_data" || k === "cmi.location") persistLocal();
+    return "true";
+  }
+  window.API_1484_11 = {
+    Initialize: function () { if (inited4) { err4 = "103"; return "false"; } if (finished) { err4 = "104"; return "false"; }
+      inited4 = true; used04 = true; inited = true; err4 = "0"; sessionStart = Date.now();
+      X.saveEntry(user.uid, cid, { status: "started", score: null, at: new Date().toISOString() });
+      X.apiPost({ type: "attempt", user: user, course: { id: cid, title: course.title }, attempt: saved.attempt, startedAt: saved.startedAt, updatedAt: new Date().toISOString(),
+        status: verdict().status, scormStatus: verdict().raw, score: verdict().score, timeSec: Math.round(saved.totalTime || 0), answers: "" });
+      return "true"; },
+    Terminate: function () { if (!inited4) { err4 = "112"; return "false"; } if (finished) { err4 = "113"; return "false"; } err4 = "0"; return finish(false); },
+    GetValue: get4, SetValue: set4,
+    Commit: function () { if (!inited4) { err4 = "142"; return "false"; } if (finished) { err4 = "143"; return "false"; } err4 = "0"; return commit(); },
+    GetLastError: function () { return err4; },
+    GetErrorString: function (c) { return { "0": "No Error", "101": "General Exception", "103": "Already Initialized", "104": "Content Instance Terminated", "112": "Termination Before Initialization", "113": "Termination After Termination", "122": "Retrieve Data Before Initialization", "123": "Retrieve Data After Termination", "132": "Store Data Before Initialization", "133": "Store Data After Termination", "142": "Commit Before Initialization", "143": "Commit After Termination", "401": "Undefined Data Model Element", "403": "Data Model Element Value Not Initialized", "404": "Data Model Element Is Read Only", "405": "Data Model Element Is Write Only" }[c] || ""; },
+    GetDiagnostic: function () { return ""; }
+  };
+
   /* ---------- интерфейс ---------- */
   var chip = document.getElementById("chip");
   function updateChip() {
@@ -196,7 +290,7 @@ body{display:flex;flex-direction:column;background:var(--ink)}
   document.getElementById("dStay").addEventListener("click", function () { document.getElementById("done").hidden = true; });
   document.getElementById("back").addEventListener("click", function () {
     if (inited && !finished) { try { var f = document.getElementById("frame").contentWindow; } catch (e) {} finish(true); }
-    location.href = "index.html";
+    location.href = backUrl;
   });
   window.addEventListener("pagehide", function () { if (inited && !finished) finish(true); });
   setInterval(function () { if (dirty) commit(); }, 30000);

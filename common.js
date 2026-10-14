@@ -27,10 +27,13 @@
   }
   function saveEntry(uid, cid, e) { var p = getProgress(uid); mergeEntry(p, cid, e); lsSet("prog:" + uid, p); return p; }
 
-  /* Траектория */
-  function courseState(prog) {
+  /* Траектории */
+  function getTrack(id) { for (var i = 0; i < P.tracks.length; i++) if (P.tracks[i].id === id) return P.tracks[i]; return P.tracks[0]; }
+  function trackCourses(t) { var a = []; t.stages.forEach(function (s) { a = a.concat(s.courses); }); return a; }
+  function courseState(prog, track) {
+    var t = typeof track === "string" ? getTrack(track) : (track || P.tracks[0]);
     var res = {}, prevStageDone = true;
-    P.stages.forEach(function (st, si) {
+    t.stages.forEach(function (st, si) {
       var prevInStage = true;
       st.courses.forEach(function (cid, ci) {
         var e = prog[cid], passed = e && e.status === "passed";
@@ -42,12 +45,20 @@
     });
     return res;
   }
-  function nextCourse(state) {
-    for (var s = 0; s < P.stages.length; s++) {
-      var cs = P.stages[s].courses;
-      for (var i = 0; i < cs.length; i++) { var c = state[cs[i]]; if (c.open && !c.passed) return cs[i]; }
-    }
+  function nextCourse(state, track) {
+    var cs = trackCourses(typeof track === "string" ? getTrack(track) : (track || P.tracks[0]));
+    for (var i = 0; i < cs.length; i++) { var c = state[cs[i]]; if (c.open && !c.passed) return cs[i]; }
     return null;
+  }
+  /* курс открыт хотя бы в одной траектории */
+  function isOpenAnywhere(prog, cid) {
+    return P.tracks.some(function (t) { var s = courseState(prog, t); return s[cid] && s[cid].open; });
+  }
+  function trackOfCourse(cid, preferred) {
+    var p = getTrack(preferred);
+    if (trackCourses(p).indexOf(cid) >= 0) return p.id;
+    for (var i = 0; i < P.tracks.length; i++) if (trackCourses(P.tracks[i]).indexOf(cid) >= 0) return P.tracks[i].id;
+    return P.tracks[0].id;
   }
 
   /* Связь с Google Apps Script */
@@ -82,5 +93,6 @@
 
   window.Portal = { lsGet: lsGet, lsSet: lsSet, lsDel: lsDel, getUser: getUser, setUser: setUser, logout: logout,
     getProgress: getProgress, saveEntry: saveEntry, courseState: courseState, nextCourse: nextCourse,
+    getTrack: getTrack, trackCourses: trackCourses, isOpenAnywhere: isOpenAnywhere, trackOfCourse: trackOfCourse,
     apiPost: apiPost, syncProgress: syncProgress, esc: esc, firstName: firstName };
 })();

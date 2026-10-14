@@ -16,13 +16,15 @@
  <div class="r"><span class="u" id="who"></span><button class="x" id="logout" hidden>Выйти</button></div>
 </div></div>
 
+<nav class="tracks" id="tracks" aria-label="Траектории"><div class="wrap" id="tracksIn"></div></nav>
+
 <div class="hero"><div class="wrap">
  <div>
-  <div class="kick in">Траектория новичка · 3 этапа · 10 курсов</div>
+  <div class="kick in" id="kick"></div>
   <h1 class="in d1">Привет, <span class="nm" id="hiName">коллега</span>!</h1>
-  <p class="lead in d2">Добро пожаловать в команду <b>585 GOLD</b>. Здесь всё, что нужно знать в первые недели: изделия, техника продаж и сервис. Проходи курсы по порядку — в конце каждого короткий тест.</p>
+  <p class="lead in d2" id="lead"></p>
   <a class="btn in d3" id="cta" href="#stage1">► Начать обучение</a>
-  <div class="who in d4">Команда магазина уже ждёт</div>
+  <div class="who in d4">Команда уже ждёт</div>
   <div class="team">
    <figure><img src="img/team-irina.webp" alt="Ирина" width="96" height="96"><figcaption>Ирина</figcaption></figure>
    <figure><img src="img/team-svetlana.webp" alt="Светлана" width="96" height="96"><figcaption>Светлана</figcaption></figure>
@@ -33,10 +35,10 @@
  </div>
  <div class="hero-art">
   <div class="win"><img src="img/hero.webp" alt="Наставник — консультант 585 GOLD с каталогом украшений" width="470" height="470">
-   <div class="sticker"><b>Наставник:</b><span class="ln l1">Привет, коллега!</span><span class="ln l2" id="stickerLine">Начнём с металлов и камней?</span></div></div>
+   <div class="sticker"><b>Наставник:</b><span class="ln l1">Привет, коллега!</span><span class="ln l2" id="stickerLine"></span></div></div>
   <div class="facts in d5">
    <div class="prog"><div class="lbl"><span>Твой прогресс</span><span><b id="pDone">0</b> из <span id="pTotal">10</span></span></div><div class="track"><div class="fill" id="pFill"></div></div></div>
-   <ul style="list-style:none"><li>3 этапа, 10 курсов</li><li>тест в конце курса</li><li>следующий шаг открывается после сдачи</li></ul>
+   <ul style="list-style:none"><li id="factCount"></li><li>тест или итог в конце курса</li><li>следующий шаг открывается после сдачи</li></ul>
   </div>
  </div>
 </div></div>
@@ -45,7 +47,7 @@
 
 <div class="final" id="final" hidden><div class="wrap">
  <div class="snum" style="color:var(--yel)">Траектория пройдена</div>
- <h2>Готово! Все 10 курсов сданы</h2>
+ <h2 id="finalTitle">Готово!</h2>
  <p class="intro">Результаты уже у учебного центра. Любой курс можно открыть ещё раз, чтобы освежить материал.</p>
 </div></div>
 
@@ -58,7 +60,7 @@
   <p>Три поля — и можно начинать. По ним учебный центр увидит твои результаты.</p>
   <label class="fld"><span>ФИО</span><input name="fio" autocomplete="name" placeholder="Иванова Мария Сергеевна" required></label>
   <label class="fld"><span>Адрес объекта</span><input name="address" autocomplete="off" placeholder="Город, улица, дом / ТЦ" required><em class="hint">Адрес магазина, где ты работаешь</em></label>
-  <label class="fld"><span>Должность</span><input name="position" autocomplete="organization-title" placeholder="Продавец-консультант" required></label>
+  <label class="fld"><span>Должность</span><input name="position" autocomplete="organization-title" placeholder="Продавец-консультант / Товаровед" required></label>
   <button class="btn" type="submit">► Начать обучение</button>
   <div class="err" id="regErr" role="alert"></div>
  </form>
@@ -69,10 +71,16 @@
 <script>
 (function () {
   var P = window.PORTAL, X = window.Portal, esc = X.esc;
-  var user = X.getUser();
+  var user = X.getUser(), prog = {}, cur = null;
 
-  var ids = []; P.stages.forEach(function (s) { ids = ids.concat(s.courses); });
-  document.getElementById("pTotal").textContent = ids.length;
+  function pickTrack() {
+    var h = location.hash.replace("#", "");
+    if (P.tracks.some(function (t) { return t.id === h; })) return h;
+    var saved = X.lsGet("track", null);
+    if (saved && P.tracks.some(function (t) { return t.id === saved; })) return saved;
+    if (user && /товаровед|ломбард|оценщ|при[её]мщ/i.test(user.position || "")) return "tovaroved";
+    return P.tracks[0].id;
+  }
 
   function statusOf(c) {
     var e = c.entry;
@@ -82,22 +90,35 @@
     if (e && e.status === "started") return { cls: "", stamp: "В процессе", btn: "► Продолжить" };
     return { cls: "", stamp: "Открыт", btn: "► Начать" };
   }
+  function doneCount(t) { var st = X.courseState(prog, t); return X.trackCourses(t).filter(function (c) { return st[c].passed; }).length; }
 
-  function render(prog) {
-    var st = X.courseState(prog), html = "", done = 0;
+  function renderTabs() {
+    document.getElementById("tracksIn").innerHTML = P.tracks.map(function (t) {
+      var n = X.trackCourses(t).length, d = doneCount(t);
+      return '<a class="trk' + (t.id === cur ? " on" : "") + '" href="#' + t.id + '" data-t="' + t.id + '"' + (t.id === cur ? ' aria-current="page"' : "") + '>' +
+        '<b>' + esc(t.tab) + '</b><span>' + esc(t.place) + ' · ' + d + '/' + n + '</span></a>';
+    }).join("");
+  }
+
+  function render() {
+    var t = X.getTrack(cur), st = X.courseState(prog, t), ids = X.trackCourses(t), html = "", done = 0;
     ids.forEach(function (id) { if (st[id].passed) done++; });
-    P.stages.forEach(function (s, si) {
-      var stageOpen = st[s.courses[0]].open || s.courses.some(function (c) { return st[c].open; });
+    document.getElementById("kick").textContent = t.kick;
+    document.getElementById("lead").innerHTML = t.lead;
+    document.getElementById("factCount").textContent = t.stages.length + " этапа, " + ids.length + " курсов";
+    document.getElementById("pTotal").textContent = ids.length;
+    t.stages.forEach(function (s, si) {
+      var stageOpen = s.courses.some(function (c) { return st[c].open; });
       var stageDone = s.courses.every(function (c) { return st[c].passed; });
       var flag = stageDone ? '<span class="ok">Этап сдан</span>' : (!stageOpen ? '<span class="lock">Откроется после этапа ' + si + '</span>' : "");
       html += '<div class="sec' + (si % 2 ? " alt" : "") + '" id="stage' + (si + 1) + '"><div class="wrap">' +
-        '<div class="snum">Этап ' + (si + 1) + ' из ' + P.stages.length + flag + '</div>' +
+        '<div class="snum">' + esc(t.tab) + ' · этап ' + (si + 1) + ' из ' + t.stages.length + flag + '</div>' +
         '<h2>' + esc(s.title) + '</h2><p class="intro">' + esc(s.intro) + '</p>' +
         '<div class="days' + (s.courses.length === 2 ? " two" : "") + '">';
       s.courses.forEach(function (cid, ci) {
         var c = P.courses[cid], cs = st[cid], v = statusOf(cs);
-        var href = cs.open ? 'player.html?c=' + encodeURIComponent(cid) : null;
-        var rule = c.passOnComplete ? "Досмотреть до конца" : (c.mastery ? "Тест от " + c.mastery + "%" : "Сдать тест в конце");
+        var href = cs.open ? 'player.html?c=' + encodeURIComponent(cid) + '&t=' + t.id : null;
+        var rule = c.passOnComplete ? "Пройти до конца" : (c.mastery ? "Тест от " + c.mastery + "%" : "Пройти курс и итоговое задание");
         html += '<div class="card ' + v.cls + '">' +
           '<span class="tab">Курс ' + (si + 1) + '.' + (ci + 1) + '</span><span class="stamp">' + esc(v.stamp) + '</span>' +
           '<h3>' + esc(c.title) + '</h3><div class="meta">' + esc(c.meta) + '</div>' +
@@ -114,16 +135,30 @@
     document.getElementById("pDone").textContent = done;
     document.getElementById("pFill").style.width = (100 * done / ids.length) + "%";
     document.getElementById("final").hidden = done < ids.length;
+    document.getElementById("finalTitle").textContent = "Готово! Траектория «" + t.tab + "» пройдена";
 
-    var nxt = X.nextCourse(st), cta = document.getElementById("cta"), line = document.getElementById("stickerLine");
+    var nxt = X.nextCourse(st, t), cta = document.getElementById("cta"), line = document.getElementById("stickerLine");
     if (nxt) {
-      cta.href = "player.html?c=" + encodeURIComponent(nxt);
+      cta.href = "player.html?c=" + encodeURIComponent(nxt) + "&t=" + t.id;
       cta.textContent = (done ? "► Продолжить: " : "► Начать: ") + P.courses[nxt].title;
-      line.textContent = done ? "Отлично! Идём дальше?" : "Начнём с металлов и камней?";
+      line.textContent = done ? "Отлично! Идём дальше?" : t.sticker;
     } else if (done === ids.length) {
       cta.href = "#final"; cta.textContent = "★ Траектория пройдена"; line.textContent = "Ты прошёл всё. Горжусь!";
     }
+    renderTabs();
   }
+
+  function setTrack(id, scroll) {
+    cur = X.getTrack(id).id; X.lsSet("track", cur);
+    if (location.hash !== "#" + cur) history.replaceState(null, "", "#" + cur);
+    render();
+    if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  document.getElementById("tracksIn").addEventListener("click", function (ev) {
+    var a = ev.target.closest("a.trk"); if (!a) return;
+    ev.preventDefault(); setTrack(a.getAttribute("data-t"), true);
+  });
+  window.addEventListener("hashchange", function () { var h = location.hash.replace("#", ""); if (P.tracks.some(function (t) { return t.id === h; }) && h !== cur) setTrack(h); });
 
   function showUser() {
     document.getElementById("who").innerHTML = user ? esc(user.fio) + " · <b>" + esc(user.position) + "</b>" : "";
@@ -135,9 +170,10 @@
 
   function load() {
     showUser();
-    if (!user) { render({}); document.getElementById("reg").hidden = false; setTimeout(function () { document.querySelector("#regForm input").focus(); }, 400); return; }
-    render(X.getProgress(user.uid));
-    X.syncProgress(user.uid, function (p, ok) { render(p); if (P.api && !ok) toast("Нет связи с сервером результатов — показываем сохранённый прогресс", 5000); });
+    cur = pickTrack();
+    if (!user) { prog = {}; setTrack(cur); document.getElementById("reg").hidden = false; setTimeout(function () { document.querySelector("#regForm input").focus(); }, 400); return; }
+    prog = X.getProgress(user.uid); setTrack(cur);
+    X.syncProgress(user.uid, function (p, ok) { prog = p; render(); if (P.api && !ok) toast("Нет связи с сервером результатов — показываем сохранённый прогресс", 5000); });
   }
 
   document.getElementById("regForm").addEventListener("submit", function (ev) {
@@ -152,11 +188,12 @@
     user = X.setUser(data);
     X.apiPost({ type: "register", user: user, at: new Date().toISOString() });
     document.getElementById("reg").hidden = true;
+    X.lsDel("track"); history.replaceState(null, "", location.pathname);
     load();
   });
 
   document.getElementById("logout").addEventListener("click", function () {
-    X.logout(); user = null; load();
+    X.logout(); X.lsDel("track"); user = null; history.replaceState(null, "", location.pathname); load();
   });
 
   load();

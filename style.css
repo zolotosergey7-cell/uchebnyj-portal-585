@@ -33,6 +33,16 @@ button,input{font:inherit;color:inherit}
 .bar .x:hover{background:#fff;color:var(--red)}
 .cur{display:inline-block;width:.6em;height:1em;background:var(--yel);vertical-align:-2px;margin-left:3px;animation:blink 1s steps(1) infinite}
 
+/* вкладки траекторий */
+.tracks{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:3px solid var(--ink)}
+.tracks .wrap{display:flex;gap:10px;padding-top:10px}
+.trk{flex:0 1 auto;display:flex;flex-direction:column;gap:5px;padding:12px 22px 11px;background:#2A2420;color:#fff;border:3px solid var(--ink);border-bottom:0;min-width:0}
+.trk b{font:800 18px/1 var(--disp);letter-spacing:-.01em}
+.trk span{font:700 11px/1 var(--disp);letter-spacing:.12em;text-transform:uppercase;opacity:.75;white-space:nowrap}
+.trk:hover{background:#3A322C}
+.trk.on{background:var(--yel);color:var(--ink)}
+.trk.on span{opacity:1;color:var(--red)}
+
 /* кнопки */
 .btn{display:inline-flex;align-items:center;gap:10px;background:var(--red);color:#fff;font-size:14px;line-height:1;padding:19px 28px;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);cursor:pointer;transition:box-shadow .15s,translate .15s}
 .btn:hover{translate:-2px -2px;box-shadow:8px 8px 0 var(--ink)}
@@ -71,7 +81,7 @@ h1 .nm{color:var(--red)}
 .prog .fill{height:100%;background:var(--red);width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 
 /* секции */
-.sec{padding:clamp(56px,7vw,96px) 0;border-top:3px solid var(--ink)}
+.sec{padding:clamp(56px,7vw,96px) 0;border-top:3px solid var(--ink);scroll-margin-top:80px}
 .sec.alt{background:var(--paper)}
 .sec.blush{background:var(--blush)}
 .snum{font-size:13px;line-height:1;color:var(--red);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -169,6 +179,10 @@ h2{font:800 clamp(30px,4vw,50px)/1.05 var(--disp);letter-spacing:-.015em;margin:
 }
 @media (max-width:560px){
  .bar .ttl{display:none}
+ .tracks .wrap{gap:6px}
+ .trk{flex:1 1 0;padding:10px 12px 9px}
+ .trk b{font-size:15px}
+ .trk span{font-size:9.5px;letter-spacing:.06em}
  .bar .r .u{max-width:16ch}
  .sticker{left:-8px;bottom:-46px}
  .sticker .ln{font-size:15px}

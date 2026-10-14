@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Первый залог — 585</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       ПЕРЕМЕННЫЕ — все цвета и размеры здесь
+       Меняй только здесь — изменится везде
+       ============================================ */
+    :root {
+      --white:        #FFFFFF;
+      --gray-light:   #F5F5F5;
+      --gray:         #E8E8E8;
+      --gray-dark:    #9E9E9E;
+      --text:         #1A1A1A;
+      --text-muted:   #666666;
+      --red:          #D32F2F;
+      --red-light:    #FFEBEE;
+      --yellow:       #F9A825;
+      --yellow-light: #FFF8E1;
+      --green:        #2E7D32;
+      --green-light:  #E8F5E9;
+
+      --header-height: 60px;
+      --footer-height: 68px;
+      --radius:        12px;
+      --shadow:        0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    /* ============================================
+       СБРОС И БАЗА
+       ============================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 16px;
+      background: var(--white);
+      color: var(--text);
+    }
+
+    /* ============================================
+       ОБОЛОЧКА КУРСА
+       Три части: шапка, экраны, футер
+       ============================================ */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ============================================
+       ШАПКА
+       Содержит: логотип слева, прогресс и доверие справа
+       ============================================ */
+    #header {
+      flex-shrink: 0;
+      height: var(--header-height);
+      background: var(--white);
+      border-bottom: 2px solid var(--gray);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      gap: 24px;
+    }
+
+    /* Логотип */
+    #logo {
+      height: 36px;
+      object-fit: contain;
+    }
+
+    /* Прогресс и доверие — правая часть шапки */
+    #header-right {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    /* Прогресс */
+    #progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #progress-bar {
+      width: 160px;
+      height: 6px;
+      background: var(--gray);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--yellow);
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    #progress-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    /* Счётчик доверия */
+    #trust-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #trust-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    #trust-bar {
+      width: 100px;
+      height: 6px;
+      background: var(--gray);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #trust-fill {
+      height: 100%;
+      width: 50%;
+      background: var(--yellow);
+      border-radius: 3px;
+      transition: width 0.5s ease, background 0.5s ease;
+    }
+
+    #trust-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 28px;
+    }
+
+    /* ============================================
+       ОБЛАСТЬ ЭКРАНОВ
+       Все экраны здесь — только один виден
+       ============================================ */
+    #screen-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Каждый экран — скрыт по умолчанию */
+    .screen {
+      display: none;
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Активный экран — виден */
+    .screen.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       ФУТЕР — кнопка "Далее"
+       Всегда внизу, заблокирована по умолчанию
+       ============================================ */
+    #footer {
+      flex-shrink: 0;
+      height: var(--footer-height);
+      background: var(--white);
+      border-top: 2px solid var(--gray);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 32px;
+    }
+
+    /* Кнопка Далее — заблокирована */
+    #btn-next {
+      padding: 13px 36px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    #btn-next:disabled {
+      background: var(--gray);
+      color: var(--gray-dark);
+      cursor: not-allowed;
+    }
+
+    #btn-next:not(:disabled) {
+      background: var(--yellow);
+      color: var(--text);
+    }
+
+    #btn-next:not(:disabled):hover {
+      background: #F57F17;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    /* ============================================
+       ВСТРЯСКА — оверлей ошибки
+       Появляется поверх всего при неверном ответе
+       Скрыт по умолчанию
+       ============================================ */
+    #shakescreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #shakescreen.active {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    #shakescreen-card {
+      background: var(--white);
+      border-radius: 16px;
+      border-top: 6px solid var(--red);
+      padding: 40px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    #shakescreen-who {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--red);
+    }
+
+    #shakescreen-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    #shakescreen-btn {
+      padding: 12px 28px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      align-self: center;
+      transition: background 0.2s;
+    }
+
+    #shakescreen-btn:hover { background: #B71C1C; }
+
+    /* ============================================
+       ОБЩИЕ КОМПОНЕНТЫ
+       Используются на нескольких экранах
+       ============================================ */
+
+    /* Двухколоночная сетка — нарратив + задание */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+    }
+
+    /* Левая колонка — нарратив */
+    .col-left {
+      display: flex;
+      flex-direction: column;
+      padding: 40px;
+      gap: 16px;
+      background: var(--gray-light);
+      border-right: 2px solid var(--gray);
+      overflow: hidden;
+    }
+
+    /* Правая колонка — задание */
+    .col-right {
+      display: flex;
+      flex-direction: column;
+      padding: 40px;
+      gap: 16px;
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    /* Метка акта */
+    .act-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--yellow);
+      background: var(--yellow-light);
+      padding: 4px 10px;
+      border-radius: 20px;
+      width: fit-content;
+    }
+
+    /* Заглушка для фото */
+    .photo-placeholder {
+      background: var(--gray);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--gray-dark);
+      font-size: 13px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .photo-placeholder span { font-size: 32px; }
+
+    /* Пузырь диалога — клиент */
+    .bubble-client {
+      background: var(--white);
+      border: 1.5px solid var(--gray);
+      border-radius: 12px;
+      padding: 12px 14px;
+      align-self: flex-start;
+      max-width: 92%;
+    }
+
+    /* Пузырь диалога — Саша */
+    .bubble-sasha {
+      background: var(--yellow-light);
+      border: 1.5px solid var(--yellow);
+      border-radius: 12px;
+      padding: 12px 14px;
+      align-self: flex-end;
+      max-width: 92%;
+    }
+
+    /* Пузырь — нарратор */
+    .bubble-narrator {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .bubble-name {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--yellow);
+      margin-bottom: 4px;
+    }
+
+    .bubble-name.red { color: var(--red); }
+
+    .bubble-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    /* Блок ситуации */
+    .situation-box {
+      background: var(--yellow-light);
+      border-left: 4px solid var(--yellow);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .situation-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--yellow);
+      margin-bottom: 4px;
+    }
+
+    /* Кнопки выбора */
+    .choice-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--white);
+      border: 2px solid var(--gray);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      font-family: inherit;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--yellow);
+      background: var(--yellow-light);
+    }
+
+    .choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .choice-letter {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--gray-light);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Обратная связь после выбора */
+    .feedback {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .feedback.show { display: block; }
+
+    .feedback.correct {
+      background: var(--green-light);
+      border-left: 4px solid var(--green);
+      color: var(--text);
+    }
+
+    .feedback.wrong {
+      background: var(--red-light);
+      border-left: 4px solid var(--red);
+      color: var(--text);
+    }
+
+    .feedback.warning {
+      background: var(--yellow-light);
+      border-left: 4px solid var(--yellow);
+      color: var(--text);
+    }
+
+    /* ============================================
+       ЭКРАН 01 — ОБЛОЖКА
+       ============================================ */
+    #screen-01 {
+      flex-direction: row;
+      background: var(--white);
+    }
+
+    .cover-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px;
+      gap: 24px;
+    }
+
+    .cover-kicker {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--yellow);
+    }
+
+    .cover-title {
+      font-size: clamp(48px, 5vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      color: var(--text);
+    }
+
+    .cover-title span { color: var(--red); }
+
+    .cover-desc {
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 420px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      margin-top: 8px;
+    }
+
+    .cover-meta-item { display: flex; flex-direction: column; gap: 2px; }
+
+    .cover-meta-num {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .cover-meta-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .cover-start-btn {
+      margin-top: 8px;
+      padding: 16px 40px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      width: fit-content;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .cover-start-btn:hover {
+      background: #B71C1C;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .cover-right {
+      width: 45%;
+      background: var(--gray-light);
+      border-left: 2px solid var(--gray);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 40px;
+    }
+
+    /* ============================================
+       ЭКРАН 02 — ДИАГНОСТИКА
+       ============================================ */
+    #screen-02 {
+      flex-direction: row;
+    }
+
+    .diag-character {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: var(--gray);
+      border: 3px solid var(--yellow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      flex-shrink: 0;
+    }
+
+    .diag-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .diag-role {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .diag-speech {
+      background: var(--white);
+      border: 1.5px solid var(--gray);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    .diag-question {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .diag-q-num {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--red);
+    }
+
+    .diag-q-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .diag-options {
+      display: flex;
+      gap: 10px;
+    }
+
+    .diag-opt {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--gray-light);
+      border: 2px solid var(--gray);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      text-align: center;
+    }
+
+    .diag-opt:hover { border-color: var(--yellow); background: var(--yellow-light); }
+    .diag-opt.selected { border-color: var(--yellow); background: var(--yellow-light); color: var(--text); font-weight: 700; }
+
+    .diag-divider {
+      height: 1px;
+      background: var(--gray);
+      margin: 4px 0;
+    }
+
+    .diag-result {
+      background: var(--green-light);
+      border-left: 4px solid var(--green);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .diag-result.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .diag-result-icon { font-size: 28px; flex-shrink: 0; }
+
+    /* ============================================
+       АКТ 1 — DRAG & DROP
+       ============================================ */
+    .dnd-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 20px;
+    }
+
+    .dnd-card {
+      padding: 12px 16px;
+      background: var(--white);
+      border: 2px solid var(--gray);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: grab;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .dnd-card:hover { border-color: var(--yellow); background: var(--yellow-light); }
+    .dnd-card.dragging { opacity: 0.4; cursor: grabbing; }
+
+    .dnd-card.wrong {
+      border-color: var(--red);
+      background: var(--red-light);
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .dnd-zones {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .dnd-zone-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--red);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .dnd-zone-area {
+      min-height: 100px;
+      border: 2px dashed var(--gray);
+      border-radius: var(--radius);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .dnd-zone-area.drag-over {
+      border-color: var(--yellow);
+      background: var(--yellow-light);
+    }
+
+    .dnd-zone-hint {
+      font-size: 12px;
+      color: var(--gray-dark);
+      text-align: center;
+      padding: 16px 0;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       ФИНАЛ
+       ============================================ */
+    #screen-13 {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--white);
+      text-align: center;
+      gap: 24px;
+      padding: 40px;
+    }
+
+    .final-icon { font-size: 64px; }
+
+    .final-title {
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .final-title span { color: var(--red); }
+
+    .final-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .final-trust {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--yellow);
+    }
+
+    .final-status {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 10px 28px;
+      border-radius: 30px;
+    }
+
+    .final-status.passed {
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .final-status.failed {
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ============================================
+       ШАПКА КУРСА
+       Логотип слева, прогресс и доверие справа
+       Видна на всех экранах кроме обложки
+       ============================================ -->
+  <header id="header" style="display:none;">
+
+    <!-- Логотип — замени logo.png на свой файл -->
+    <img src="img/logo.png" alt="585" id="logo">
+
+    <div id="header-right">
+
+      <!-- Прогресс курса -->
+      <div id="progress-wrap">
+        <div id="progress-bar">
+          <div id="progress-fill"></div>
+        </div>
+        <span id="progress-label">1 / 13</span>
+      </div>
+
+      <!-- Счётчик доверия -->
+      <div id="trust-wrap">
+        <span id="trust-label">⚡ Доверие</span>
+        <div id="trust-bar">
+          <div id="trust-fill"></div>
+        </div>
+        <span id="trust-value">50</span>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ============================================
+       ОБЛАСТЬ ЭКРАНОВ
+       Все 13 экранов здесь — виден только активный
+       ============================================ -->
+  <div id="screen-area">
+
+    <!-- ==========================================
+         ЭКРАН 01 — ОБЛОЖКА
+         Первый экран. Без шапки и футера.
+         Кнопка "Начать курс" запускает курс.
+         ========================================== -->
+    <div class="screen active" id="screen-01">
+      <div class="cover-left">
+        <div class="cover-kicker">Курс 585 · Ломбард · Начальный уровень</div>
+        <h1 class="cover-title">Первый<br><span>залог</span></h1>
+        <p class="cover-desc">Одна смена. Три клиента. Всё что нужно знать о приёме и оценке техники.</p>
+        <div class="cover-meta">
+          <div class="cover-meta-item">
+            <span class="cover-meta-num">30</span>
+            <span class="cover-meta-label">минут</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-num">3</span>
+            <span class="cover-meta-label">клиента</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-num">5</span>
+            <span class="cover-meta-label">заданий</span>
+          </div>
+        </div>
+        <button class="cover-start-btn" onclick="startCourse()">Начать курс →</button>
+      </div>
+      <div class="cover-right">
+        <!-- ЗАГЛУШКА — фото ломбарда вечером, стойка, тёплый свет -->
+        <!-- Замени на: <img src="img/cover-photo.jpg"> -->
+       <img src="img/cover-photo.jpg" style="width:100%;height:280px;object-fit:cover;border-radius:12px;">
+        <img src="img/sasha.png" style="width:140px;height:140px;border-radius:50%;object-fit:cover;">
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 02 — ДИАГНОСТИКА
+         Два вопроса об опыте.
+         Определяет стартовое доверие: 50 или 70.
+         Кнопка "Далее" появляется после обоих ответов.
+         ========================================== -->
+    <div class="screen" id="screen-02">
+      <div class="two-col" style="width:100%;">
+
+        <!-- Левая: персонаж Ирина -->
+        <div class="col-left" style="align-items:center;justify-content:center;gap:16px;">
+          <!-- ЗАГЛУШКА — фото Ирины Петровны -->
+          <img src="img/irina.png" style="width:350px;height:350px;border-radius:50%;object-fit:cover;">
+          <div style="text-align:center;">
+            <div class="diag-name">Ирина</div>
+            <div class="diag-role">Наставник товаровед</div>
+          </div>
+          <div class="diag-speech">
+            «Прежде чем начнём — пара вопросов. Хочу понять с чего нам стартовать.»
+          </div>
+        </div>
+
+        <!-- Правая: вопросы -->
+        <div class="col-right" style="justify-content:center;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);">Начало смены · Диагностика</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text);">Расскажи о себе</div>
+          <div style="font-size:14px;color:var(--text-muted);">Ответь на два вопроса — это займёт 30 секунд</div>
+
+          <!-- Вопрос 1 -->
+          <div class="diag-question">
+            <div class="diag-q-num">Вопрос 1 из 2</div>
+            <div class="diag-q-text">Ты уже работал с приёмом техники в ломбарде?</div>
+            <div class="diag-options">
+              <button class="diag-opt" id="d1a" onclick="diagAnswer(1,'experienced')">Да, есть опыт</button>
+              <button class="diag-opt" id="d1b" onclick="diagAnswer(1,'beginner')">Нет, я новичок</button>
+            </div>
+          </div>
+
+          <div class="diag-divider"></div>
+
+          <!-- Вопрос 2 -->
+          <div class="diag-question">
+            <div class="diag-q-num">Вопрос 2 из 2</div>
+            <div class="diag-q-text">Ты знаком с Рабочим Порталом для оценки техники?</div>
+            <div class="diag-options">
+              <button class="diag-opt" id="d2a" onclick="diagAnswer(2,'yes')">Да, работал с ним</button>
+              <button class="diag-opt" id="d2b" onclick="diagAnswer(2,'no')">Нет, первый раз слышу</button>
+            </div>
+          </div>
+
+          <!-- Результат диагностики — скрыт до ответа на оба вопроса -->
+          <div class="diag-result" id="diag-result">
+            <div class="diag-result-icon" id="diag-icon"></div>
+            <div id="diag-text"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 03 — АКТ 1: ЗАВЯЗКА
+         Саша выходит на смену. Ирина объясняет систему.
+         Задание: drag & drop — расставь роли.
+         ========================================== -->
+    <div class="screen" id="screen-03">
+      <div class="two-col" style="width:100%;">
+
+        <!-- Левая: нарратив -->
+        <div class="col-left">
+          <div class="act-badge">Акт 1 · Начало смены</div>
+
+          <!-- ЗАГЛУШКА — фото Саши за стойкой, первый день -->
+          <img src="img/sasha.png" style="width:100%;height:250px;object-fit:cover;border-radius:12px;">
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-client">
+              <div class="bubble-name">Ирина</div>
+              <div class="bubble-text">Саша, главное запомни — ты никогда не принимаешь решение в одиночку. У нас есть отлаженный рабочий процесс.</div>
+            </div>
+            <div class="bubble-sasha">
+              <div class="bubble-name">Саша</div>
+              <div class="bubble-text">А если я не знаю что делать с какой-то техникой?</div>
+            </div>
+            <div class="bubble-client">
+              <div class="bubble-name">Ирина</div>
+              <div class="bubble-text">Ты должен проверить по инструкции и описать в заявке нужные характеристики. Оценщик решит всё остальное.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая: drag & drop -->
+        <div class="col-right">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);">Задание</div>
+          <div style="font-size:20px;font-weight:800;color:var(--text);">Кто что делает?</div>
+          <div style="font-size:13px;color:var(--text-muted);">Перетащи каждое действие в нужную колонку</div>
+
+          <!-- Карточки для перетаскивания -->
+          <div class="dnd-cards" id="dnd-pool">
+            <div class="dnd-card" draggable="true" id="dnd-1" data-role="товаровед">Проверяет технику и фотографирует</div>
+            <div class="dnd-card" draggable="true" id="dnd-2" data-role="оценщик">Принимает решение об оценке и устанавливает сумму</div>
+            <div class="dnd-card" draggable="true" id="dnd-3" data-role="товаровед">Оформляет залоговый билет в SAP</div>
+          </div>
+
+          <!-- Зоны -->
+          <div class="dnd-zones">
+            <div>
+              <div class="dnd-zone-title">Товаровед</div>
+              <div class="dnd-zone-area" id="zone-товаровед" data-role="товаровед">
+                <div class="dnd-zone-hint">Перетащи сюда</div>
+              </div>
+            </div>
+            <div>
+              <div class="dnd-zone-title">Оценщик</div>
+              <div class="dnd-zone-area" id="zone-оценщик" data-role="оценщик">
+                <div class="dnd-zone-hint">Перетащи сюда</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Результат -->
+          <div class="feedback" id="dnd-feedback"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 04 — АКТ 2: АРТЁМ ИНТРО
+         Знакомство с первым клиентом.
+         Нарративный экран — кнопка "Далее" сразу активна.
+         ========================================== -->
+    <div class="screen" id="screen-04">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 2 · Первый клиент</div>
+          <!-- ЗАГЛУШКА — фото Артёма у стойки -->
+        <img src="img/scene-artem.jpg" style="width:100%;height:340px;object-fit:cover;border-radius:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-narrator">Дверь открывается. Заходит мужчина лет тридцати. Достаёт из кармана iPhone в чехле.</div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text">Добрый вечер. Хочу заложить iPhone 14 Pro. Мне нужно тысяч сорок, срочно.</div>
+            </div>
+            <div class="bubble-sasha">
+              <div class="bubble-name">Саша</div>
+              <div class="bubble-text">Добрый вечер. Сначала проведём оценку.</div>
+            </div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text"><em>Передаёт телефон.</em> Он рабочий. Только стекло треснуло — там защитное было. Экран целый.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-right" style="align-items:center;justify-content:center;gap:20px;">
+          <!-- ЗАГЛУШКА — портрет Артёма -->
+          <img src="img/artem.png" style="width:350px;height:350px;border-radius:50%;object-fit:cover;">
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:800;">Клиент</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">30 лет · iPhone 14 Pro<br>Торопится, хочет 40 000 ₽</div>
+          </div>
+          <div style="background:var(--red-light);border-left:4px solid var(--red);border-radius:0 12px 12px 0;padding:14px 16px;font-size:14px;line-height:1.5;color:var(--text);">
+            ⚠️ На экране трещина. Клиент говорит — это защитное стекло. Как поступить?
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 05 — АКТ 2: ВЫБОР 1 — СТЕКЛО
+         Первая точка выбора.
+         Правильный ответ: Б — попросить клиента снять.
+         ========================================== -->
+    <div class="screen" id="screen-05">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 2 · Выбор 1 из 3</div>
+          <!-- ЗАГЛУШКА — фото iPhone с трещиной крупным планом -->
+          <img src="img/scene-iphone.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;">
+          <div class="bubble-client">
+            <div class="bubble-name red">Клиент</div>
+            <div class="bubble-text">Вот телефон. Там трещина — но это защитное стекло, экран целый, обещаю.</div>
+          </div>
+          <div class="situation-box">
+            <div class="situation-label">Ситуация</div>
+            На экране трещина. Клиент утверждает — это защитное стекло. Что должен сделать Саша?
+          </div>
+        </div>
+        <div class="col-right">
+          <div style="font-size:16px;font-weight:700;">Действия Саши:</div>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="choices-05">
+            <button class="choice-btn" onclick="answer05('a')">
+              <span class="choice-letter">А</span>
+              <span>Самостоятельно снять защитное стекло и проверить экран</span>
+            </button>
+            <button class="choice-btn" onclick="answer05('b')">
+              <span class="choice-letter">Б</span>
+              <span>Попросить клиента снять защитное стекло для проверки</span>
+            </button>
+            <button class="choice-btn" onclick="answer05('c')">
+              <span class="choice-letter">В</span>
+              <span>Сразу отказать — трещина есть, значит не принимаем</span>
+            </button>
+          </div>
+          <div class="feedback" id="feedback-05"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 06 — АКТ 2: ВЫБОР 2 — ОЖИДАНИЕ
+         Вторая точка выбора.
+         Правильный ответ: Б — объяснить ценность ожидания.
+         ========================================== -->
+    <div class="screen" id="screen-06">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 2 · Выбор 2 из 3</div>
+          <!-- ЗАГЛУШКА — фото клиент смотрит на часы -->
+          <img src="img/scene-wait.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-narrator">Саша создал заявку. Проходит 5 минут. Клиент начинает нервничать.</div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text">Ну что там, долго ещё? Я уже минут десять жду...</div>
+            </div>
+          </div>
+          <div class="situation-box">
+            <div class="situation-label">Ситуация</div>
+            Клиент нервничает из-за ожидания. Что отвечает Саша?
+          </div>
+        </div>
+        <div class="col-right">
+          <div style="font-size:16px;font-weight:700;">Саша отвечает:</div>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="choices-06">
+            <button class="choice-btn" onclick="answer06('a')">
+              <span class="choice-letter">А</span>
+              <span>«Ждём, скоро будет» — и продолжает работать молча</span>
+            </button>
+            <button class="choice-btn" onclick="answer06('b')">
+              <span class="choice-letter">Б</span>
+              <span>«Наш специалист сейчас детально изучает ваше устройство — именно поэтому мы можем предложить максимальную оценку. Уже совсем скоро»</span>
+            </button>
+            <button class="choice-btn" onclick="answer06('c')">
+              <span class="choice-letter">В</span>
+              <span>«Я не знаю сколько займёт, зависит от специалиста»</span>
+            </button>
+          </div>
+          <div class="feedback" id="feedback-06"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 07 — АКТ 2: ВЫБОР 3 — ТЕЛЕФОН В РУКИ
+         Третья точка выбора.
+         Правильный ответ: В — вежливо отказать.
+         ========================================== -->
+    <div class="screen" id="screen-07">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 2 · Выбор 3 из 3</div>
+          <!-- ЗАГЛУШКА — фото клиент тянется за телефоном -->
+          <img src="img/scene-artem.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-narrator">Оценщик согласовал 38 000 ₽. Клиент соглашается. Но просит кое о чём...</div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text">38 000 — договорились. Дайте телефон последний раз гляну — там фото важное хочу скинуть.</div>
+            </div>
+          </div>
+          <div class="situation-box">
+            <div class="situation-label">Ситуация</div>
+            Клиент согласился на сумму и просит телефон «на минутку». Что должен сделать Саша?
+          </div>
+        </div>
+        <div class="col-right">
+          <div style="font-size:16px;font-weight:700;">Действия Саши:</div>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="choices-07">
+            <button class="choice-btn" onclick="answer07('a')">
+              <span class="choice-letter">А</span>
+              <span>Передать телефон — клиент же согласился, доверяем.</span>
+            </button>
+            <button class="choice-btn" onclick="answer07('b')">
+              <span class="choice-letter">Б</span>
+              <span>Передадать телефон, но внимательно наблюдать, чтобы клиент ничего не подменил.</span>
+            </button>
+            <button class="choice-btn" onclick="answer07('c')">
+              <span class="choice-letter">В</span>
+              <span>Если клиенту требуется доступ к устройству, передать, и по возвращению провести полную повторную проверку.</span>
+            </button>
+          </div>
+          <div class="feedback" id="feedback-07"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 08 — АКТ 3: ГАЛИНА ИНТРО
+         Знакомство со вторым клиентом.
+         Нарративный экран — кнопка сразу активна.
+         ========================================== -->
+    <div class="screen" id="screen-08">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 3 · Второй клиент</div>
+          <!-- ЗАГЛУШКА — фото Галины с ноутбуком -->
+          <img src="img/scene-galina.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-narrator">Пришла женщина. Принесла ноутбук в пакете.</div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text">Здравствуйте. Хочу заложить ноутбук. Коробки нет, но зарядка есть.</div>
+            </div>
+            <div class="bubble-sasha">
+              <div class="bubble-name">Саша</div>
+              <div class="bubble-text">Здравствуйте! Сейчас проверим и оценим.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-right" style="align-items:center;justify-content:center;gap:20px;">
+          <!-- ЗАГЛУШКА — портрет Галины -->
+          <img src="img/galina.png" style="width:350px;height:350px;border-radius:50%;object-fit:cover;">
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:800;">Клиент</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Lenovo ThinkPad<br>Без коробки, есть зарядка</div>
+          </div>
+          <div style="background:var(--yellow-light);border-left:4px solid var(--yellow);border-radius:0 12px 12px 0;padding:14px 16px;font-size:14px;line-height:1.5;">
+            💻 Саша открывает чек-лист для ноутбуков. Нужно проверить каждый пункт.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 09 — АКТ 3: ЧЕК-ЛИСТ НОУТБУКА
+         Интерактивный чек-лист.
+         3 пункта критичные — пропуск даёт встряску.
+         Кнопка "Далее" — только после всех пунктов.
+         ========================================== -->
+    <div class="screen" id="screen-09">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 3 · Чек-лист ноутбука</div>
+          <div class="bubble-client">
+            <div class="bubble-name">Ирина</div>
+            <div class="bubble-text">Саша, проверяй каждый пункт — от этого зависит качество заявки и сумма оценки.</div>
+          </div>
+          <!-- ЗАГЛУШКА — фото ноутбука на стойке -->
+          <img src="img/scene-laptop.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;margin-top:8px;">
+        </div>
+        <div class="col-right">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);">Задание</div>
+          <div style="font-size:18px;font-weight:800;">Проверь ноутбук</div>
+          <div style="font-size:13px;color:var(--text-muted);">Подготовила чек лист проверки. <span style="color:var(--red);font-weight:700;">Красным выделила особо важные пункты, проверяй внимательно.</span></div>
+          <!-- Чек-лист — critical=true значит обязательный -->
+          <div style="display:flex;flex-direction:column;gap:6px;" id="checklist">
+
+            <div class="check-item" data-id="1" data-critical="true" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text"><span class="check-required">●</span> Внешний вид — сколы, царапины, шатается ли крышка</div>
+            </div>
+            <div class="check-item" data-id="2" data-critical="true" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text"><span class="check-required">●</span> Зарядка — подключить, убедиться что идёт</div>
+            </div>
+            <div class="check-item" data-id="3" data-critical="false" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text">Перезагрузка — проверить стабильность</div>
+            </div>
+            <div class="check-item" data-id="4" data-critical="true" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text"><span class="check-required">●</span> Пароль при загрузке — есть/нет, если есть — записать</div>
+            </div>
+            <div class="check-item" data-id="5" data-critical="true" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text"><span class="check-required">●</span> Диагностика — Win+R → dxdiag → сфото все 4 вкладки</div>
+            </div>
+            <div class="check-item" data-id="6" data-critical="false" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text">Wi-Fi — ноутбук видит и подключается к сети</div>
+            </div>
+            <div class="check-item" data-id="7" data-critical="false" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text">Звук — воспроизвести видео</div>
+            </div>
+            <div class="check-item" data-id="8" data-critical="false" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text">Клавиатура — открыть Блокнот, протестировать клавиши</div>
+            </div>
+            <div class="check-item" data-id="9" data-critical="false" onclick="toggleCheck(this)">
+              <div class="check-box"></div>
+              <div class="check-text">USB-порты — вставить флешку в каждый порт (если есть флешка на объекте)</div>
+            </div>
+
+          </div>
+
+          <button class="choice-btn" id="checklist-submit" onclick="submitChecklist()" style="border-color:var(--red);color:var(--red);font-weight:700;margin-top:4px;">
+            Отправить заявку оценщику →
+          </button>
+
+          <div class="feedback" id="feedback-09"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 10 — АКТ 4: МАКС ИНТРО
+         Знакомство с третьим клиентом.
+         Нарративный экран — кнопка сразу активна.
+         ========================================== -->
+    <div class="screen" id="screen-10">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 4 · Третий клиент</div>
+          <!-- ЗАГЛУШКА — фото Макса с пакетом телефонов -->
+         <img src="img/scene-max.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="bubble-narrator">До закрытия час. Входит мужчина с большим пакетом.</div>
+            <div class="bubble-client">
+              <div class="bubble-name red">Клиент</div>
+              <div class="bubble-text">Привет! Хочу сдать 7 телефонов. Все новые, в плёнке. Samsung Galaxy S24.</div>
+            </div>
+            <div class="bubble-sasha">
+              <div class="bubble-name">Саша</div>
+              <div class="bubble-text"><em>Внутренний голос: стоп. У нас лимит, 2 однотипных новых от одного клиента. Тут 7...</em></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-right" style="align-items:center;justify-content:center;gap:20px;">
+          <!-- ЗАГЛУШКА — портрет Макса -->
+          <img src="img/max.png" style="width:350px;height:350px;border-radius:50%;object-fit:cover;">
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:800;">Клиент</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">7 Samsung Galaxy S24<br>Все новые, в упаковке</div>
+          </div>
+          <div style="background:var(--red-light);border-left:4px solid var(--red);border-radius:0 12px 12px 0;padding:14px 16px;font-size:14px;line-height:1.5;">
+            ⚠️ Лимит: до 2 однотипных новых устройств от одного клиента без согласования.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 11 — АКТ 4: ПИСЬМО НА СОГЛАСОВАНИЕ
+         Заполнить шаблон письма — выбор из вариантов.
+         Все три поля должны быть верными.
+         ========================================== -->
+    <div class="screen" id="screen-11">
+      <div class="two-col" style="width:100%;">
+        <div class="col-left">
+          <div class="act-badge">Акт 4 · Согласование</div>
+          <div class="bubble-client">
+            <div class="bubble-name">Ирина </div>
+            <div class="bubble-text">Клиент превышает лимит, разрешенный по регламенту.Нужно получить согласование.</div>
+          </div>
+          <div class="situation-box">
+            <div class="situation-label">Правило</div>
+            При превышении лимита — пишешь письмо в СБ. В копию: начальник отдела + ДГМ. К письму — фото техники.
+          </div>
+          <!-- ЗАГЛУШКА — фото 7 телефонов в упаковках -->
+          <img src="img/scene-phones.jpg" style="width:100%;height:350px;object-fit:cover;border-radius:12px;margin-top:8px;">
+        </div>
+        <div class="col-right">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);">Задание</div>
+          <div style="font-size:18px;font-weight:800;">Составь письмо</div>
+          <div style="font-size:13px;color:var(--text-muted);">Выбери правильный вариант для каждого поля</div>
+
+          <!-- Шаблон письма -->
+          <div style="background:var(--gray-light);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;border:1.5px solid var(--gray);">
+
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">КОМУ:</div>
+            <select class="letter-select" id="letter-to" onchange="checkLetter()">
+              <option value="">— выбери получателя —</option>
+              <option value="wrong1">Начальнику отдела ломбардов техники+ДГМ</option>
+              <option value="correct">Служба безопасности + ДГМ+ Начальник отдела техники</option>
+              <option value="wrong2">Директору магазина+ДГМ+ТД</option>
+            </select>
+
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">ТЕМА:</div>
+            <select class="letter-select" id="letter-subject" onchange="checkLetter()">
+              <option value="">— выбери тему —</option>
+              <option value="wrong1">Вопрос по технике</option>
+              <option value="wrong2">Приём залога от клиента</option>
+              <option value="correct">Согласование приёма техники</option>
+            </select>
+
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">В ТЕКСТЕ ОБЯЗАТЕЛЬНО УКАЗАТЬ:</div>
+            <select class="letter-select" id="letter-content" onchange="checkLetter()">
+              <option value="">— выбери содержание —</option>
+              <option value="wrong1">Только ФИО товароведа и описание залога</option>
+              <option value="correct">ФИО товароведа, описание техники, код клиента в SAP, причину согласования</option>
+              <option value="wrong2">Описание техники и сумму, код клиента в SAP, причину согласования</option>
+            </select>
+
+          </div>
+
+          <div class="feedback" id="feedback-11"></div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 12 — АКТ 5: ИТОГОВЫЙ ТЕСТ
+         5 вопросов из всего материала курса.
+         +5 доверия за каждый верный ответ.
+         ========================================== -->
+    <div class="screen" id="screen-12">
+      <div style="width:100%;display:flex;flex-direction:column;padding:40px;gap:20px;overflow:hidden;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);">Акт 5 · Итоговый тест</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;">Проверь себя</div>
+          </div>
+          <div style="font-size:14px;color:var(--text-muted);font-weight:600;">Вопрос <span id="quiz-current">1</span> из 5</div>
+        </div>
+
+        <!-- Прогресс теста -->
+        <div style="height:4px;background:var(--gray);border-radius:2px;overflow:hidden;">
+          <div id="quiz-progress" style="height:100%;width:20%;background:var(--red);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+
+        <!-- Вопрос -->
+        <div style="font-size:18px;font-weight:700;line-height:1.4;" id="quiz-question"></div>
+
+        <!-- Варианты -->
+        <div style="display:flex;flex-direction:column;gap:10px;" id="quiz-options"></div>
+
+        <!-- Обратная связь -->
+        <div class="feedback" id="feedback-12"></div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================
+         ЭКРАН 13 — ФИНАЛ
+         Результат зависит от счётчика доверия.
+         ≥40 → пройден, <40 → не пройден.
+         Здесь отправляем результат в SCORM.
+         ========================================== -->
+    <div class="screen" id="screen-13">
+      <div class="final-icon" id="final-icon"></div>
+      <div class="final-trust" id="final-trust"></div>
+      <div class="final-status" id="final-status"></div>
+      <div class="final-title" id="final-title"></div>
+      <div class="final-desc" id="final-desc"></div>
+    </div>
+
+  </div><!-- /screen-area -->
+
+  <!-- ============================================
+       ФУТЕР — кнопка "Далее"
+       Скрыта на обложке. На остальных экранах — внизу.
+       ============================================ -->
+  <footer id="footer" style="display:none;">
+    <button id="btn-next" disabled onclick="nextScreen()">Выполни задание</button>
+  </footer>
+
+  <!-- ============================================
+       ВСТРЯСКА — оверлей ошибки
+       Вызывается через: showShake(who, text, callback)
+       ============================================ -->
+  <div id="shakescreen">
+    <div id="shakescreen-card">
+      <div id="shakescreen-who"></div>
+      <div id="shakescreen-text"></div>
+      <button id="shakescreen-btn" onclick="closeShake()">Исправить →</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<style>
+  /* ============================================
+     СТИЛИ ЧЕК-ЛИСТА
+     ============================================ */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1.5px solid var(--gray);
+    background: var(--white);
+  }
+
+  .check-item:hover { background: var(--gray-light); }
+
+  .check-item.checked {
+    background: var(--green-light);
+    border-color: var(--green);
+  }
+
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid var(--gray-dark);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s;
+    margin-top: 1px;
+  }
+
+  .check-item.checked .check-box {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .check-item.checked .check-box::after { content: '✓'; }
+
+  .check-text {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .check-required { color: var(--red); margin-right: 4px; }
+
+  /* ============================================
+     СТИЛИ ПИСЬМА
+     ============================================ */
+  .letter-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid var(--gray);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--white);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .letter-select:focus { outline: none; border-color: var(--yellow); }
+  .letter-select.correct { border-color: var(--green); background: var(--green-light); }
+  .letter-select.wrong { border-color: var(--red); background: var(--red-light); }
+</style>
+
+<script>
+  // ============================================
+  // СОСТОЯНИЕ КУРСА
+  // Все переменные здесь — больше нигде
+  // ============================================
+  const State = {
+    currentScreen: 1,   // номер текущего экрана (1-13)
+    totalScreens: 13,   // всего экранов
+    trust: 0,          // счётчик доверия (0-100)
+    diagAnswers: { q1: null, q2: null }, // ответы диагностики
+    shakeCallback: null, // функция после закрытия встряски
+    quizIndex: 0,       // текущий вопрос теста
+    quizScore: 0,       // счёт теста
+    mistakes: [],       // список ошибок для финала
+  };
+
+  // ============================================
+  // ВОПРОСЫ ИТОГОВОГО ТЕСТА
+  // Добавляй/меняй вопросы здесь
+  // ============================================
+  const quizQuestions = [
+    {
+      q: 'Клиент принёс iPhone в чехле. Чтобы проверить корпус, нужно снять чехол. Кто это делает?',
+      options: ['Товаровед снимает сам', 'Просит клиента снять', 'Не снимаем — принимаем как есть'],
+      correct: 1,
+      feedback: 'Товаровед не имеет права самостоятельно снимать чехлы и защитные аксессуары. Только клиент делает это сам.'
+    },
+    {
+      q: 'Клиент хочет сдать 7 одинаковых новых Samsung. Лимит — 2 однотипных новых от одного клиента. Что делаешь?',
+      options: ['Принимаю все 7 — клиент важен', 'Сразу отказываю — лимит превышен', 'Пишу письмо в СБ для согласования'],
+      correct: 2,
+      feedback: 'При превышении лимита нужно получить согласование. Пишешь письмо в СБ. В копию: Начальник отдела + ДГМ.'
+    },
+    {
+      q: 'Оценщик согласовал сумму. Клиент просит телефон «на минутку». Что делаешь?',
+      options: ['Отдаю — клиент же согласился', 'Передадам телефон, но буду внимательно наблюдать, чтобы клиент ничего не подменил', 'Если клиенту требуется доступ к устройству, передам, и по возвращению проведу полную повторную проверку.'],
+      correct: 2,
+      feedback: 'После завершения оценки передача предмета залога клиенту не приветствуется во избежание подмены, обязательна повторная, полная проверка.'
+    },
+    {
+      q: 'Клиент нервничает: «Долго ещё?». Лучший ответ:',
+      options: [
+        '«Ждём, скоро будет»',
+        '«Наш специалист детально изучает устройство — чтобы дать максимальную оценку. Уже скоро»',
+        '«Не знаю, зависит от специалиста»'
+      ],
+      correct: 1,
+      feedback: 'Объясняй ценность ожидания — клиент ждёт чтобы получить максимальную сумму. Это снимает раздражение.'
+    },
+    {
+      q: 'Кто принимает решение о приёме или отказе в залоге техники?',
+      options: ['Товаровед самостоятельно', 'Только Оценщик через Рабочий Портал', 'Директор магазина'],
+      correct: 1,
+      feedback: 'Решение принимает только Оценщик через Рабочий Портал. Товаровед самостоятельно может отказать только если техника есть в Черном списке.'
+    }
+  ];
+
+  // ============================================
+  // НАВИГАЦИЯ — переключение экранов
+  // ============================================
+
+  // Показать экран по номеру
+  function showScreen(n) {
+    // Скрыть все экраны
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+    });
+
+    // Показать нужный
+    const screen = document.getElementById('screen-0' + (n < 10 ? '0' : '') + n);
+    // Правильное формирование id: screen-01, screen-10 и т.д.
+    const id = 'screen-' + String(n).padStart(2, '0');
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+
+    State.currentScreen = n;
+
+    // Обновить прогресс
+    updateProgress();
+
+    // Заблокировать кнопку по умолчанию
+    lockNext();
+
+    // Показать/скрыть шапку и футер
+    if (n === 1) {
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('footer').style.display = 'none';
+    } else {
+      document.getElementById('header').style.display = 'flex';
+      document.getElementById('footer').style.display = 'flex';
+    }
+
+    // Специальная логика для каждого экрана
+    onScreenEnter(n);
+  }
+
+  // Следующий экран — вызывается кнопкой "Далее"
+  function nextScreen() {
+    showScreen(State.currentScreen + 1);
+  }
+
+  // Логика при входе на экран
+  function onScreenEnter(n) {
+    if (n === 4)  { unlockNext(); } // интро Артёма — нарратив
+    if (n === 8)  { unlockNext(); } // интро Галины — нарратив
+    if (n === 10) { unlockNext(); } // интро Макса — нарратив
+    if (n === 12) { startQuiz(); }  // итоговый тест
+  }
+
+  // ============================================
+  // КНОПКА "ДАЛЕЕ"
+  // ============================================
+
+  function lockNext() {
+    const btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    btn.textContent = 'Выполни задание';
+  }
+
+  function unlockNext() {
+    const btn = document.getElementById('btn-next');
+    btn.disabled = false;
+    btn.textContent = 'Далее →';
+  }
+
+  // ============================================
+  // ПРОГРЕСС И ДОВЕРИЕ
+  // ============================================
+
+  function updateProgress() {
+    const n = State.currentScreen;
+    const total = State.totalScreens;
+    const percent = Math.round((n / total) * 100);
+
+    document.getElementById('progress-fill').style.width = percent + '%';
+    document.getElementById('progress-label').textContent = n + ' / ' + total;
+  }
+
+  function changeTrust(amount) {
+    State.trust = Math.max(0, Math.min(100, State.trust + amount));
+    updateTrustBar();
+  }
+
+  function updateTrustBar() {
+    const val = State.trust;
+    const fill = document.getElementById('trust-fill');
+    const label = document.getElementById('trust-value');
+
+    fill.style.width = val + '%';
+    label.textContent = val;
+
+    // Цвет меняется по уровню
+    if (val >= 70) fill.style.background = '#2E7D32';      // зелёный
+    else if (val >= 40) fill.style.background = '#F9A825'; // жёлтый
+    else fill.style.background = '#D32F2F';                // красный
+  }
+
+  // ============================================
+  // ВСТРЯСКА — экран ошибки
+  // who: 'client' или 'assessor'
+  // text: что говорит персонаж
+  // callback: что делать после закрытия
+  // ============================================
+
+  function showShake(who, text, callback) {
+    document.getElementById('shakescreen-who').textContent =
+      who === 'client' ? '😤 Клиент' : '❌ Оценщик';
+    document.getElementById('shakescreen-text').textContent = text;
+    document.getElementById('shakescreen').classList.add('active');
+    State.shakeCallback = callback || null;
+  }
+
+  function closeShake() {
+    document.getElementById('shakescreen').classList.remove('active');
+    if (State.shakeCallback) {
+      State.shakeCallback();
+      State.shakeCallback = null;
+    }
+  }
+
+  // ============================================
+  // ПОКАЗАТЬ ОБРАТНУЮ СВЯЗЬ
+  // elementId: id блока feedback
+  // type: 'correct' | 'wrong' | 'warning'
+  // text: текст сообщения
+  // ============================================
+
+  function showFeedback(elementId, type, text) {
+    const el = document.getElementById(elementId);
+    el.textContent = text;
+    el.className = 'feedback ' + type + ' show';
+  }
+
+  // ============================================
+  // СТАРТ КУРСА — кнопка "Начать курс"
+  // ============================================
+
+  function startCourse() {
+    showScreen(2);
+  }
+
+  // ============================================
+  // ДИАГНОСТИКА — экран 02
+  // Два вопроса. После обоих — показываем результат.
+  // ============================================
+
+  function diagAnswer(qNum, value) {
+    State.diagAnswers['q' + qNum] = value;
+
+    // Подсветить выбранную кнопку
+    if (qNum === 1) {
+      document.getElementById('d1a').classList.toggle('selected', value === 'experienced');
+      document.getElementById('d1b').classList.toggle('selected', value === 'beginner');
+    } else {
+      document.getElementById('d2a').classList.toggle('selected', value === 'yes');
+      document.getElementById('d2b').classList.toggle('selected', value === 'no');
+    }
+
+    // Оба вопроса отвечены?
+    if (State.diagAnswers.q1 && State.diagAnswers.q2) {
+
+      // Диагностика НЕ даёт баллов — только меняет текст
+      let icon, text;
+      if (State.diagAnswers.q1 === 'experienced' && State.diagAnswers.q2 === 'yes') {
+        icon = '💪'; text = 'Отлично — есть опыт! Курс освежит знания и покажет важные нюансы.';
+      } else if (State.diagAnswers.q1 === 'experienced' || State.diagAnswers.q2 === 'yes') {
+        icon = '👍'; text = 'Хорошее начало. Кое-что знакомо — остальное узнаешь в процессе.';
+      } else {
+        icon = '🚀'; text = 'Добро пожаловать! Всё с нуля — именно для этого курс и создан.';
+      }
+
+      document.getElementById('diag-icon').textContent = icon;
+      document.getElementById('diag-text').textContent = text;
+      document.getElementById('diag-result').classList.add('show');
+
+      unlockNext();
+    }
+  }
+
+  // ============================================
+  // DRAG & DROP — экран 03
+  // ============================================
+
+  let draggedCard = null;
+
+  // Инициализация drag & drop — вызывается при входе на экран 03
+  function initDragDrop() {
+    document.querySelectorAll('.dnd-card').forEach(card => {
+      card.addEventListener('dragstart', e => {
+        draggedCard = card;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        draggedCard = null;
+        document.querySelectorAll('.dnd-zone-area').forEach(z => z.classList.remove('drag-over'));
+      });
+    });
+
+    document.querySelectorAll('.dnd-zone-area').forEach(zone => {
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+      });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        if (!draggedCard) return;
+
+        const hint = zone.querySelector('.dnd-zone-hint');
+        if (hint) hint.remove();
+
+        zone.appendChild(draggedCard);
+        draggedCard.classList.remove('dragging');
+        checkDragDrop();
+      });
+    });
+  }
+
+  function checkDragDrop() {
+    const zoneT = document.getElementById('zone-товаровед');
+    const zoneO = document.getElementById('zone-оценщик');
+    const cardsT = zoneT.querySelectorAll('.dnd-card');
+    const cardsO = zoneO.querySelectorAll('.dnd-card');
+
+    let allCorrect = true;
+
+    // Проверить карточки в зоне товароведа
+    cardsT.forEach(card => {
+      if (card.dataset.role !== 'товаровед') {
+        allCorrect = false;
+        card.classList.add('wrong');
+        setTimeout(() => {
+          document.getElementById('dnd-pool').appendChild(card);
+          card.classList.remove('wrong');
+        }, 800);
+      }
+    });
+
+    // Проверить карточки в зоне оценщика
+    cardsO.forEach(card => {
+      if (card.dataset.role !== 'оценщик') {
+        allCorrect = false;
+        card.classList.add('wrong');
+        setTimeout(() => {
+          document.getElementById('dnd-pool').appendChild(card);
+          card.classList.remove('wrong');
+        }, 800);
+      }
+    });
+
+    // Все 3 карточки размещены верно
+    if (cardsT.length + cardsO.length === 3 && allCorrect) {
+      changeTrust(+10);
+      showFeedback('dnd-feedback', 'correct', '✅ Верно! Товаровед описывает — Оценщик решает. Это основа всей системы.');
+      unlockNext();
+    }
+  }
+
+  // ============================================
+  // ВЫБОРЫ — АКТ 2
+  // ============================================
+
+  function disableChoices(containerId) {
+    document.querySelectorAll('#' + containerId + ' .choice-btn')
+      .forEach(btn => btn.disabled = true);
+  }
+
+  // Выбор 1 — стекло (экран 05)
+  function answer05(a) {
+    disableChoices('choices-05');
+    if (a === 'b') {
+      changeTrust(+15);
+      showFeedback('feedback-05', 'correct', '✅ Верно! Товаровед не имеет права снимать защитные аксессуары. Клиент делает это сам.');
+      unlockNext();
+    } else if (a === 'a') {
+      changeTrust(-20);
+      State.mistakes.push('Попытался снять стекло самостоятельно');
+      showShake('client', 'Клиент: «Эй, что вы делаете с моим телефоном?! Я не разрешал!»', () => {
+        showFeedback('feedback-05', 'wrong', '❌ Товаровед не имеет права самостоятельно снимать чехлы или защитное стекло. Попросите клиента снять защитное стекло.');
+        unlockNext();
+      });
+    } else {
+      changeTrust(-15);
+      State.mistakes.push('Отказал клиенту без создания заявки');
+      showFeedback('feedback-05', 'wrong', '❌ Нельзя отказывать без заявки. Если клиент отказывается снимать стекло — создай заявку и опиши ситуацию. Решение принимает оценщик.');
+      unlockNext();
+    }
+  }
+
+  // Выбор 2 — ожидание (экран 06)
+  function answer06(a) {
+    disableChoices('choices-06');
+    if (a === 'b') {
+      changeTrust(+15);
+      showFeedback('feedback-06', 'correct', '✅ Верно! Ты объяснил ценность ожидания, клиент ждёт чтобы получить максимальную сумму. Это снимает раздражение.');
+      unlockNext();
+    } else if (a === 'a') {
+      changeTrust(-10);
+      State.mistakes.push('Не объяснил клиенту причину ожидания');
+      showFeedback('feedback-06', 'wrong', '❌ Молчание усиливает раздражение. Объясни что специалист тщательно проверяет устройство чтобы дать максимальную оценку.');
+      unlockNext();
+    } else {
+      changeTrust(-20);
+      State.mistakes.push('Сказал что не знает сколько ждать');
+      showShake('client', 'Клиент: «Что значит не знаете?! Тогда я забираю телефон и ухожу!»', () => {
+        showFeedback('feedback-06', 'wrong', '❌ Никогда не говори что не знаешь сколько ждать. Всегда объясняй ценность ожидания.');
+        unlockNext();
+      });
+    }
+  }
+
+  // Выбор 3 — телефон в руки (экран 07)
+  function answer07(a) {
+    disableChoices('choices-07');
+    if (a === 'c') {
+      changeTrust(+15);
+      showFeedback('feedback-07', 'correct', '✅ После завершения оценки и согласия клиента, передача предмета залога обратно не приветствуется, но, отказать мы не имеем права. По возвращению предмета залога, проведите полную проверку повторно.');
+      unlockNext();
+    } else if (a === 'a') {
+      changeTrust(-20);
+      State.mistakes.push('Отдал телефон после оценки без повторной проверки');
+      showShake('assessor', 'Оценщик: «Телефон был передан клиенту после оценки. Возможна подмена. Необходима полная повторная проверка.»', () => {
+        showFeedback('feedback-07', 'wrong', '❌ После оценки не приветствуется передача устройство клиенту. Возможна подмена на похожее но не оригинальное устройство.');
+        unlockNext();
+      });
+    } else {
+      changeTrust(-5);
+      State.mistakes.push('Передал телефон — требовалась повторная проверка');
+      showFeedback('feedback-07', 'warning', '⚠️ Если клиент получил доступ — обязательна повторная полная проверка. Лучше вообще не передавать.');
+      unlockNext();
+    }
+  }
+
+  // ============================================
+  // ЧЕК-ЛИСТ НОУТБУКА — экран 09
+  // ============================================
+
+  function toggleCheck(item) {
+    item.classList.toggle('checked');
+  }
+
+  function submitChecklist() {
+    const items = document.querySelectorAll('.check-item');
+    const criticalItems = document.querySelectorAll('.check-item[data-critical="true"]');
+
+    let missedCritical = [];
+
+    criticalItems.forEach(item => {
+      if (!item.classList.contains('checked')) {
+        missedCritical.push(item.querySelector('.check-text').textContent.trim());
+      }
+    });
+
+    if (missedCritical.length > 0) {
+      // Пропущены обязательные пункты — встряска
+      changeTrust(-15);
+      State.mistakes.push('Пропустил обязательные пункты чек-листа');
+      showShake(
+        'assessor',
+        'Оценщик: «Заявка неполная. Не хватает данных по обязательным пунктам. Отправь на доработку.»',
+        () => {
+          showFeedback('feedback-09', 'wrong', '❌ Пропущены обязательные пункты: ' + missedCritical.join(', ') + '. Отметь все красные пункты перед отправкой.');
+        }
+      );
+    } else {
+      // Все обязательные пункты отмечены
+      changeTrust(+15);
+      showFeedback('feedback-09', 'correct', '✅ Отлично! Все обязательные пункты проверены. Заявка отправлена оценщику.');
+      unlockNext();
+    }
+  }
+
+  // ============================================
+  // ПИСЬМО НА СОГЛАСОВАНИЕ — экран 11
+  // ============================================
+
+  function checkLetter() {
+    const to = document.getElementById('letter-to').value;
+    const subject = document.getElementById('letter-subject').value;
+    const content = document.getElementById('letter-content').value;
+
+    // Подсветить каждое поле
+    styleSelect('letter-to', to);
+    styleSelect('letter-subject', subject);
+    styleSelect('letter-content', content);
+
+    // Все три верные?
+    if (to === 'correct' && subject === 'correct' && content === 'correct') {
+      changeTrust(+15);
+      showFeedback('feedback-11', 'correct', '✅ Письмо составлено верно! Менеджер получит всю нужную информацию для согласования.');
+      unlockNext();
+    } else if (to && subject && content) {
+      // Все заполнены но есть ошибки
+      showFeedback('feedback-11', 'wrong', '❌ Есть ошибки. Проверь выделенные поля.');
+    }
+  }
+
+  function styleSelect(id, value) {
+    const el = document.getElementById(id);
+    if (!value) { el.className = 'letter-select'; return; }
+    el.className = 'letter-select ' + (value === 'correct' ? 'correct' : 'wrong');
+  }
+
+  // ============================================
+  // ИТОГОВЫЙ ТЕСТ — экран 12
+  // ============================================
+
+  function startQuiz() {
+    State.quizIndex = 0;
+    State.quizScore = 0;
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const q = quizQuestions[State.quizIndex];
+    const total = quizQuestions.length;
+
+    document.getElementById('quiz-current').textContent = State.quizIndex + 1;
+    document.getElementById('quiz-progress').style.width = ((State.quizIndex + 1) / total * 100) + '%';
+    document.getElementById('quiz-question').textContent = q.q;
+    document.getElementById('feedback-12').className = 'feedback';
+
+    const optContainer = document.getElementById('quiz-options');
+    optContainer.innerHTML = '';
+
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.innerHTML = `<span class="choice-letter">${String.fromCharCode(65 + i)}</span><span>${opt}</span>`;
+      btn.onclick = () => answerQuiz(i);
+      optContainer.appendChild(btn);
+    });
+  }
+
+  function answerQuiz(chosen) {
+    const q = quizQuestions[State.quizIndex];
+
+    // Заблокировать все варианты
+    document.querySelectorAll('#quiz-options .choice-btn')
+      .forEach(btn => btn.disabled = true);
+
+    if (chosen === q.correct) {
+      changeTrust(+5);
+      State.quizScore++;
+      showFeedback('feedback-12', 'correct', '✅ ' + q.feedback);
+    } else {
+      changeTrust(-5);
+      showFeedback('feedback-12', 'wrong', '❌ ' + q.feedback);
+    }
+
+    // Следующий вопрос или финал
+    setTimeout(() => {
+      State.quizIndex++;
+      if (State.quizIndex < quizQuestions.length) {
+        renderQuestion();
+      } else {
+        unlockNext(); // все вопросы пройдены — разблокируем кнопку
+      }
+    }, 1800);
+  }
+
+  // ============================================
+  // ФИНАЛ — экран 13
+  // Результат зависит от доверия
+  // ≥40 → пройден, <40 → не пройден
+  // ============================================
+
+  function showFinal() {
+    const trust = State.trust;
+    const passed = trust >= 60;
+
+    document.getElementById('final-trust').textContent = trust + ' / 100';
+    document.getElementById('final-icon').textContent = passed ? '🏆' : '📚';
+
+    const statusEl = document.getElementById('final-status');
+    statusEl.textContent = passed ? 'Курс пройден' : 'Нужно повторить';
+    statusEl.className = 'final-status ' + (passed ? 'passed' : 'failed');
+
+    document.getElementById('final-title').innerHTML = passed
+      ? 'Отличная <span>смена!</span>'
+      : 'Первая смена — <span>это опыт</span>';
+
+    document.getElementById('final-desc').textContent = passed
+      ? 'Ты знаешь как принимать технику правильно. Система работает — доверяй ей.'
+      : 'Первая смена — это всегда сложно. Вот что стоит закрепить: ' + (State.mistakes.length > 0 ? State.mistakes.join('; ') + '.' : 'повтори материал курса.');
+
+    // Отправить результат в SCORM
+    scormFinish(passed, trust);
+  }
+
+  // ============================================
+// SCORM 1.2 — поиск API и передача результата
+// Вебсофт может размещать API в родительском окне
+// ============================================
+
+function findScormAPI() {
+  // Вебсофт ищет API через цепочку parent — так же делаем мы
+  try {
+    let win = window;
+    let attempts = 7;
+    while (win && win.parent !== win && attempts-- > 0) {
+      if (typeof win.parent.API !== 'undefined') {
+        return win.parent.API;
+      }
+      win = win.parent;
+    }
+  } catch(e) {}
+  // Запасной вариант
+  try {
+    if (typeof window.top.API !== 'undefined') return window.top.API;
+  } catch(e) {}
+  return null;
+}
+
+function scormInit() {
+  const api = findScormAPI();
+  if (api) {
+    api.LMSInitialize('');
+    console.log('SCORM подключён');
+  } else {
+    console.log('SCORM не подключён — режим превью');
+  }
+}
+
+function scormFinish(passed, score) {
+  const api = findScormAPI();
+  if (api) {
+    const status = passed ? 'passed' : 'failed';
+    api.LMSSetValue('cmi.core.lesson_status', status);
+    api.LMSSetValue('cmi.core.score.raw', String(score));
+    api.LMSSetValue('cmi.core.score.min', '0');
+    api.LMSSetValue('cmi.core.score.max', '100');
+    api.LMSCommit('');
+    api.LMSFinish('');
+    console.log('SCORM результат отправлен:', status, score);
+  } else {
+    console.log('SCORM не подключён. Результат:', passed ? 'пройден' : 'не пройден', score);
+  }
+}
+
+  // ============================================
+  // ЗАПУСК
+  // Инициализация при загрузке страницы
+  // ============================================
+
+  window.addEventListener('DOMContentLoaded', () => {
+
+    // Инициализировать SCORM
+    scormInit();
+
+    // Показать обложку
+    showScreen(1);
+
+    // Инициализировать drag & drop для экрана 03
+    // (карточки уже в DOM — можно подключить сразу)
+    initDragDrop();
+
+  });
+
+  // Перехватываем переход на финал чтобы показать результат
+  const originalNextScreen = nextScreen;
+  window.nextScreen = function() {
+    if (State.currentScreen === 12) {
+      showScreen(13);
+      showFinal();
+    } else {
+      showScreen(State.currentScreen + 1);
+    }
+  };
+
+</script>
+
+</body>
+</html>

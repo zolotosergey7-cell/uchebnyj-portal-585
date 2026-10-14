@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="585-tech-course" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+
+  <organizations default="585-org">
+    <organization identifier="585-org">
+      <title>Первый залог — 585</title>
+      <item identifier="item-01" identifierref="resource-01">
+        <title>Первый залог — 585</title>
+      </item>
+    </organization>
+  </organizations>
+
+  <resources>
+    <resource identifier="resource-01"
+      type="webcontent"
+      adlcp:scormtype="sco"
+      href="index.html">
+      <file href="index.html"/>
+      <file href="img/logo.png"/>
+      <file href="img/cover-photo.jpg"/>
+      <file href="img/sasha.png"/>
+      <file href="img/irina.png"/>
+      <file href="img/artem.png"/>
+      <file href="img/galina.png"/>
+      <file href="img/max.png"/>
+      <file href="img/scene-artem.jpg"/>
+      <file href="img/scene-iphone.jpg"/>
+      <file href="img/scene-wait.jpg"/>
+      <file href="img/scene-galina.jpg"/>
+      <file href="img/scene-laptop.jpg"/>
+      <file href="img/scene-max.jpg"/>
+      <file href="img/scene-phones.jpg"/>
+    </resource>
+  </resources>
+
+</manifest>

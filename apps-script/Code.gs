@@ -1,6 +1,6 @@
 /**
  * Учебный портал 585 GOLD — приём результатов в Google Таблицу.
- * Лист «Сотрудники» — сводка: одна строка на сотрудника, по колонке на курс.
+ * Лист «Сотрудники» — сводка: одна строка на сотрудника, по колонке на курс (продавец + товаровед).
  * Лист «Попытки»    — журнал: одна строка на попытку прохождения курса (с ответами на тест).
  *
  * Установка: Расширения → Apps Script → вставить этот код → запустить setup() один раз →
@@ -12,10 +12,18 @@ var COURSES = [
   ['metals', 'Металлы'], ['stones', 'Камни'],
   ['greeting', 'Приветствие и установление контакта'], ['needs', 'Выявление потребностей'], ['presentation', 'Презентация'],
   ['objections', 'Работа с возражениями'], ['closing', 'Завершение сделки'],
-  ['safe-shop', 'Безопасный магазин 2.0'], ['credit', 'Кредит'], ['bonus', 'Гид по бонусам']
+  ['safe-shop', 'Безопасный магазин 2.0'], ['credit', 'Кредит'], ['bonus', 'Гид по бонусам'],
+  ['pawn-intro', 'Ломбард: курс для новичка'], ['pawn-security', 'Ломбард: регламенты безопасности'],
+  ['pawn-first', 'Первый залог. Приём и оценка техники'], ['pawn-request', 'Создание заявки и проверка техники'],
+  ['pawn-trainer', 'Тренажёр «Оценка техники»'], ['pawn-cx', 'Управление клиентским опытом'], ['pawn-ld', 'Блок обучения ЛД']
+];
+// Траектории: какие курсы входят (по id)
+var TRACKS = [
+  ['Продавец', ['metals', 'stones', 'greeting', 'needs', 'presentation', 'objections', 'closing', 'safe-shop', 'credit', 'bonus']],
+  ['Товаровед', ['pawn-intro', 'pawn-security', 'pawn-first', 'pawn-request', 'pawn-trainer', 'pawn-cx', 'pawn-ld']]
 ];
 var USERS = 'Сотрудники', LOG = 'Попытки';
-var U_HEAD = ['Ключ', 'ФИО', 'Адрес объекта', 'Должность', 'Регистрация', 'Последняя активность', 'Сдано курсов', 'Траектория пройдена'];
+var U_HEAD = ['Ключ', 'ФИО', 'Адрес объекта', 'Должность', 'Регистрация', 'Последняя активность', 'Продавец: сдано из 10', 'Товаровед: сдано из 7'];
 var L_HEAD = ['Попытка', 'Ключ', 'ФИО', 'Адрес объекта', 'Должность', 'Курс', 'Начало', 'Обновлено', 'Статус', 'Балл, %', 'Время в курсе, мин', 'Статус SCORM', 'Ответы на тест'];
 var U_FIRST_COURSE_COL = U_HEAD.length + 1;
 
@@ -24,6 +32,10 @@ function setup() {
   ss.setSpreadsheetTimeZone('Europe/Moscow');
   var u = sheet_(USERS, U_HEAD.concat(COURSES.map(function (c) { return c[1]; })));
   var l = sheet_(LOG, L_HEAD);
+  var head = U_HEAD.concat(COURSES.map(function (c) { return c[1]; }));
+  u.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#F42C24').setFontColor('#FFFFFF').setWrap(true);
+  u.getRange(1, U_FIRST_COURSE_COL + 10, 1, COURSES.length - 10).setBackground('#14100E').setFontColor('#FFE800');
+  if (u.getFilter()) u.getFilter().remove();
   u.hideColumns(1); l.hideColumns(1, 2);
   u.setFrozenColumns(2);
   u.getRange(2, 5, u.getMaxRows() - 1, 2).setNumberFormat('dd.mm.yyyy HH:mm');
@@ -40,9 +52,11 @@ function setup() {
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextStartsWith('Не сдан').setBackground('#FFEAEA').setFontColor('#C62828').setRanges([r]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextStartsWith('В процессе').setBackground('#FFF7C2').setRanges([r]).build());
   });
-  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Да').setBackground('#F42C24').setFontColor('#FFFFFF').setBold(true)
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenNumberEqualTo(10).setBackground('#F42C24').setFontColor('#FFFFFF').setBold(true)
+    .setRanges([u.getRange(2, 7, u.getMaxRows() - 1, 1)]).build());
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenNumberEqualTo(7).setBackground('#F42C24').setFontColor('#FFFFFF').setBold(true)
     .setRanges([u.getRange(2, 8, u.getMaxRows() - 1, 1)]).build());
-  u.setConditionalFormatRules(rules.slice(0, 3).concat(rules[6]));
+  u.setConditionalFormatRules(rules.slice(0, 3).concat(rules.slice(6)));
   l.setConditionalFormatRules(rules.slice(3, 6));
   [u, l].forEach(function (s) { if (!s.getFilter()) s.getRange(1, 1, Math.max(2, s.getLastRow()), s.getLastColumn()).createFilter(); });
 }
@@ -111,7 +125,7 @@ function upsertUser_(u) {
   var s = sheet_(USERS, U_HEAD.concat(COURSES.map(function (c) { return c[1]; })));
   var r = findRow_(s, 1, u.uid), now = new Date();
   if (r < 0) {
-    var row = [u.uid, u.fio, u.address, u.position, now, now, 0, 'Нет'];
+    var row = [u.uid, u.fio, u.address, u.position, now, now, 0, 0];
     COURSES.forEach(function () { row.push(''); });
     s.appendRow(row); return s.getLastRow();
   }
@@ -145,8 +159,10 @@ function updateSummary_(row, d) {
   else if (cur && cur.status === 'failed' && next.status === 'started') keep = true;
   if (!keep) cell.setValue(label_(next.status, next.score));
   var labels = s.getRange(row, U_FIRST_COURSE_COL, 1, COURSES.length).getValues()[0];
-  var done = labels.filter(function (x) { return String(x).indexOf('Сдан') === 0; }).length;
-  s.getRange(row, 7, 1, 2).setValues([[done, done === COURSES.length ? 'Да' : 'Нет']]);
+  var counts = TRACKS.map(function (t) {
+    return t[1].filter(function (id) { return String(labels[courseIndex_(id)]).indexOf('Сдан') === 0; }).length;
+  });
+  s.getRange(row, 7, 1, 2).setValues([counts]);
 }
 
 function progress_(uid) {
